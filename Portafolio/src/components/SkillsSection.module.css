@@ -53,7 +53,7 @@
   border: 1px solid var(--border-color);
   border-radius: 50px;
   white-space: nowrap;
-  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, translate 0.25s ease;
   cursor: default;
   flex-shrink: 0;
 }
@@ -61,7 +61,7 @@
 .skillChip:hover {
   border-color: var(--primary-color);
   box-shadow: 0 4px 20px color-mix(in srgb, var(--primary-color) 15%, transparent);
-  transform: translateY(-3px);
+  translate: 0 -3px; /* translate, no transform: GSAP usa transform */
 }
 
 .chipIcon {
@@ -76,4 +76,151 @@
   font-weight: 700;
   color: var(--text-color);
   letter-spacing: 0.01em;
+}
+
+/* ── Detalle por área ─────────────────── */
+.groups {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  padding-top: 56px;
+  padding-bottom: 0;
+}
+
+@media (max-width: 1024px) {
+  .groups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .groups > :last-child { grid-column: 1 / -1; }
+}
+
+@media (max-width: 680px) {
+  .groups { grid-template-columns: 1fr; padding-top: 40px; }
+}
+
+.groupCard {
+  padding: 28px;
+  border-radius: var(--radius-lg);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.groupTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-color);
+}
+
+.groupTitle span {
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 6px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+}
+
+.levels {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.levelHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.levelName {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.levelNote {
+  margin-left: 8px;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.levelValue {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.levelTrack {
+  height: 6px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  overflow: hidden;
+}
+
+.levelFill {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+}
+
+.softList {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.softChip {
+  padding: 8px 16px;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-color);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.learning {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 26px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--primary-color) 8%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--primary-color) 35%, transparent);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.learning strong { color: var(--text-color); }
+
+.learningDot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary-color) 50%, transparent);
+  animation: learningPulse 2s ease-out infinite;
+}
+
+@keyframes learningPulse {
+  to { box-shadow: 0 0 0 10px transparent; }
 }

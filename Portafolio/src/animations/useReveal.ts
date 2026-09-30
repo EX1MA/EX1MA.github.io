@@ -52,6 +52,8 @@ export function useReveal(scope: RefObject<HTMLElement | null>, dependencies: un
         once: true,
         onEnter: batch => gsap.to(batch, {
           autoAlpha: 1, y: 0, duration: 0.85, ease: 'expo.out', stagger: 0.09, overwrite: true,
+          // Al terminar se quitan los estilos en línea para que los hovers con `translate` funcionen
+          clearProps: 'transform,translate,rotate,scale',
         }),
       });
     }

@@ -49,7 +49,9 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
     >
       {/* ── Image ── */}
       <div className={styles.imageWrap}>
-        <img data-img src={project.image} alt={project.title} className={styles.img} loading="lazy" />
+        <div data-img className={styles.imgParallax}>
+          <img src={project.image} alt={project.title} className={styles.img} loading="lazy" />
+        </div>
 
         {/* Hover overlay */}
         <div className={styles.overlay}>

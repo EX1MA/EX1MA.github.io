@@ -75,7 +75,7 @@ function App() {
       <main key={role}>
         <HeroSection data={currentData.hero} introDelay={introDelay} />
         <AboutSection data={currentData.about} />
-        <SkillsSection skillsList={currentData.skills} />
+        <SkillsSection skillsList={currentData.skills} role={role} />
         <ProjectsSection projectsList={currentData.projects} />
         <ExperienceSection />
         <ContactSection />

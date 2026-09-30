@@ -56,7 +56,7 @@ export const AboutSection = ({ data }: AboutSectionProps) => {
     if (statsBox && counters.length) {
       gsap.from(statsBox.children, {
         autoAlpha: 0, y: 60, rotationX: -35, transformOrigin: '50% 100%',
-        duration: 1, stagger: 0.12, ease: 'expo.out',
+        duration: 1, stagger: 0.12, ease: 'expo.out', clearProps: 'transform,translate,rotate,scale', // deja libre el hover
         scrollTrigger: { trigger: statsBox, start: 'top 88%', once: true },
       });
       stats.forEach((stat, i) => {

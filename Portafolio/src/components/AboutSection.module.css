@@ -202,13 +202,13 @@
   align-items: center;
   gap: 8px;
   text-align: center;
-  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, translate 0.25s ease;
 }
 
 .statCard:hover {
   border-color: var(--primary-color);
   box-shadow: 0 8px 30px color-mix(in srgb, var(--primary-color) 12%, transparent);
-  transform: translateY(-4px);
+  translate: 0 -4px; /* translate, no transform: GSAP usa transform */
 }
 
 .statValue {
@@ -242,10 +242,10 @@
   color: var(--primary-color);
   text-decoration: none;
   border: 1.5px solid color-mix(in srgb, var(--primary-color) 40%, transparent);
-  transition: background var(--transition), transform var(--transition);
+  transition: background var(--transition), translate var(--transition);
 }
 
 .cvLink:hover {
   background: color-mix(in srgb, var(--primary-color) 10%, transparent);
-  transform: translateY(-2px);
+  translate: 0 -2px; /* translate, no transform: GSAP usa transform */
 }
