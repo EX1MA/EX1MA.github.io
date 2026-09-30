@@ -228,3 +228,24 @@
   color: var(--text-muted);
   letter-spacing: 0.04em;
 }
+
+.cvLink {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px 20px;
+  border-radius: 50px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  text-decoration: none;
+  border: 1.5px solid color-mix(in srgb, var(--primary-color) 40%, transparent);
+  transition: background var(--transition), transform var(--transition);
+}
+
+.cvLink:hover {
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  transform: translateY(-2px);
+}

@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { id: 'about',    label: 'Sobre Mí' },
   { id: 'skills',   label: 'Habilidades' },
   { id: 'projects', label: 'Proyectos' },
+  { id: 'experience', label: 'Trayectoria' },
   { id: 'contact',  label: 'Contacto' },
 ];
 

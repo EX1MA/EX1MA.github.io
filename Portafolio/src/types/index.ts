@@ -9,10 +9,13 @@ export interface Project {
   image: string;
   technologies: string[];
   features?: string[];
-  demoLink: string;
-  repoLink: string;
+  client?: string;
+  /** Si no hay enlace, el botón no se muestra */
+  demoLink?: string;
+  demoLabel?: string;
+  repoLink?: string;
   year?: number;
-  status?: 'Completado' | 'En Desarrollo' | 'Concepto';
+  status?: 'Completado' | 'En Desarrollo' | 'Mantenimiento' | 'Concepto';
   category?: string;
   highlight?: boolean;
 }
@@ -26,4 +29,26 @@ export interface Stat {
   value: number;
   label: string;
   suffix: string;
+}
+
+export interface Experience {
+  role: string;
+  company: string;
+  place?: string;
+  period: string;
+  description: string;
+  current?: boolean;
+}
+
+export interface Education {
+  year: string;
+  title: string;
+  school: string;
+}
+
+export interface Certification {
+  year: string;
+  title: string;
+  issuer: string;
+  note?: string;
 }

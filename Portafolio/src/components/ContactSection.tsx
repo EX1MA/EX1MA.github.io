@@ -66,7 +66,7 @@ export const ContactSection = () => {
         >
           {[
             { icon: '✉', label: 'Email', value: 'joelc309@gmail.com' },
-            { icon: '📍', label: 'Ubicación', value: 'México · Remoto' },
+            { icon: '📍', label: 'Ubicación', value: 'Naucalpan, Edo. Méx. · Remoto' },
             { icon: '⚡', label: 'Disponibilidad', value: 'Abierto a proyectos' },
           ].map(item => (
             <motion.div key={item.label} className={s.infoItem} variants={itemVariants}>
