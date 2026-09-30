@@ -63,7 +63,7 @@ export const portfolioData: Record<'developer' | 'designer', RoleContent> = {
         title: "App del Clima en Tiempo Real",
         description: "Aplicación meteorológica con pronóstico de 7 días, geolocalización automática e íconos animados. Construida con la API de OpenWeatherMap.",
         longDescription: "App de clima con interfaz limpia y animaciones fluidas que reaccionan según las condiciones meteorológicas. Detecta automáticamente la ubicación del usuario, permite buscar cualquier ciudad del mundo y guarda un historial de búsquedas recientes.",
-        image: "https://images.unsplash.com/photo-1504608524841-42584120d693?q=80&w=1200&auto=format&fit=crop",
+        image: "https://images.unsplash.com/photo-1592210454359-9043f067919b?q=80&w=1200&auto=format&fit=crop",
         technologies: ["React", "TypeScript", "OpenWeatherMap API", "CSS Modules", "Vite", "Geolocation API"],
         features: [
           "Geolocalización automática del usuario",
@@ -101,7 +101,7 @@ export const portfolioData: Record<'developer' | 'designer', RoleContent> = {
     ],
     skills: [
       { name: 'HTML5', icon: 'https://cdn.svgporn.com/logos/html-5.svg' },
-      { name: 'CSS3', icon: 'https://cdn.svgporn.com/logos/css-3.svg' },
+      { name: 'CSS3', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg' },
       { name: 'JavaScript', icon: 'https://cdn.svgporn.com/logos/javascript.svg' },
       { name: 'TypeScript', icon: 'https://cdn.svgporn.com/logos/typescript-icon.svg' },
       { name: 'React', icon: 'https://cdn.svgporn.com/logos/react.svg' },
@@ -110,7 +110,7 @@ export const portfolioData: Record<'developer' | 'designer', RoleContent> = {
       { name: 'Tailwind', icon: 'https://cdn.svgporn.com/logos/tailwindcss-icon.svg' },
       { name: 'Node.js', icon: 'https://cdn.svgporn.com/logos/nodejs-icon.svg' },
       { name: 'Git', icon: 'https://cdn.svgporn.com/logos/git-icon.svg' },
-      { name: 'Vite', icon: 'https://cdn.svgporn.com/logos/vitejs.svg' },
+      { name: 'Vite', icon: 'https://cdn.svgporn.com/logos/vite.svg' },
       { name: 'Figma', icon: 'https://cdn.svgporn.com/logos/figma.svg' }
     ]
   },

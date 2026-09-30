@@ -16,17 +16,9 @@ export const AboutSection = ({ data }: AboutSectionProps) => {
   const imageRef    = useRef<HTMLDivElement>(null);
   const textRef     = useRef<HTMLDivElement>(null);
   const statsRef    = useRef<HTMLDivElement>(null);
-  const counterEls  = useRef<HTMLSpanElement[]>([]);
-  counterEls.current = [];
 
   const headerRef = useRef<HTMLDivElement>(null);
   const isInView  = useInView(headerRef, { once: true, amount: 0.4 });
-
-  if (!data?.text) return null;
-
-  const addCounter = (el: HTMLSpanElement | null) => {
-    if (el && !counterEls.current.includes(el)) counterEls.current.push(el);
-  };
 
   // Parallax on profile image
   useEffect(() => {
@@ -71,8 +63,9 @@ export const AboutSection = ({ data }: AboutSectionProps) => {
 
   // Stat counters + card entrance
   useEffect(() => {
-    if (!statsRef.current || !data.stats?.length) return;
-    const counters = counterEls.current;
+    const stats = data?.stats;
+    if (!statsRef.current || !stats?.length) return;
+    const counters = Array.from(statsRef.current.querySelectorAll<HTMLSpanElement>('[data-counter]'));
     if (!counters.length) return;
 
     const ctx = gsap.context(() => {
@@ -86,7 +79,7 @@ export const AboutSection = ({ data }: AboutSectionProps) => {
         }
       );
 
-      data.stats!.forEach((stat, i) => {
+      stats.forEach((stat, i) => {
         const el = counters[i];
         if (!el) return;
         const obj = { val: 0 };
@@ -101,7 +94,9 @@ export const AboutSection = ({ data }: AboutSectionProps) => {
       });
     }, statsRef);
     return () => ctx.revert();
-  }, [data.stats]);
+  }, [data?.stats]);
+
+  if (!data?.text) return null;
 
   return (
     <section id="about" ref={sectionRef} className="section-container">
@@ -134,7 +129,7 @@ export const AboutSection = ({ data }: AboutSectionProps) => {
         <div ref={statsRef} className={s.statsGrid}>
           {data.stats.map((stat, i) => (
             <div key={i} className={s.statCard}>
-              <span ref={addCounter} className={s.statValue}>0{stat.suffix}</span>
+              <span data-counter className={s.statValue}>0{stat.suffix}</span>
               <span className={s.statLabel}>{stat.label}</span>
             </div>
           ))}
