@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
 import gsap from 'gsap';
 import skillsStyles from './SkillsSection.module.css';
+import { prefersReducedMotion } from '../utils/motion';
 import type { Skill } from '../types';
 
 interface SkillsSectionProps { skillsList: Skill[]; }
@@ -9,10 +10,11 @@ interface SkillsSectionProps { skillsList: Skill[]; }
 /* ── Infinite Marquee Row ──────────────────── */
 const MarqueeRow = ({ skills, reverse = false }: { skills: Skill[]; reverse?: boolean }) => {
   const trackRef = useRef<HTMLDivElement>(null);
+  const reduced  = prefersReducedMotion();
 
   useEffect(() => {
     const track = trackRef.current;
-    if (!track) return;
+    if (!track || reduced) return;
 
     // Duplicate content → seamless loop by moving -50%
     const duration = skills.length * 3.2;
@@ -35,13 +37,14 @@ const MarqueeRow = ({ skills, reverse = false }: { skills: Skill[]; reverse?: bo
       container.removeEventListener('mouseenter', pause);
       container.removeEventListener('mouseleave', resume);
     };
-  }, [skills, reverse]);
+  }, [skills, reverse, reduced]);
 
-  const doubled = [...skills, ...skills];
+  // Sin animación se muestran una sola vez y en varias líneas
+  const doubled = reduced ? skills : [...skills, ...skills];
 
   return (
-    <div className={skillsStyles.marqueeWrapper}>
-      <div ref={trackRef} className={skillsStyles.marqueeTrack}>
+    <div className={skillsStyles.marqueeWrapper} style={reduced ? { maskImage: 'none', WebkitMaskImage: 'none' } : undefined}>
+      <div ref={trackRef} className={skillsStyles.marqueeTrack} style={reduced ? { flexWrap: 'wrap' } : undefined}>
         {doubled.map((skill, i) => (
           <div key={i} className={skillsStyles.skillChip}>
             <img src={skill.icon} alt={skill.name} className={skillsStyles.chipIcon} />

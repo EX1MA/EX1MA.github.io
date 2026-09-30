@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { AboutSection } from './components/AboutSection';
@@ -26,6 +26,7 @@ function App() {
   }, [role, currentData.themeColor]);
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className={appStyles.appContainer}>
       <CustomCursor />
       <ScrollProgress />
@@ -51,6 +52,7 @@ function App() {
       <Footer />
       <ScrollToTop />
     </div>
+    </MotionConfig>
   );
 }
 

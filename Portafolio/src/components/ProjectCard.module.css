@@ -194,8 +194,8 @@
 
 .tag {
   background: color-mix(in srgb, var(--accent-color) 12%, var(--bg-secondary));
-  color: var(--accent-color);
-  border: 1px solid color-mix(in srgb, var(--accent-color) 25%, transparent);
+  color: color-mix(in srgb, var(--accent-color) 45%, var(--text-color));
+  border: 1px solid color-mix(in srgb, var(--accent-color) 35%, transparent);
   padding: 4px 11px;
   border-radius: 50px;
   font-size: 0.75rem;
