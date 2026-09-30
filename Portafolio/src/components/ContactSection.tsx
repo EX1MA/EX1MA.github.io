@@ -4,12 +4,14 @@ import gsap from 'gsap';
 import s from './ContactSection.module.css';
 
 // FormSubmit reenvía los mensajes a este correo (sin cuenta ni claves)
-const FORM_ENDPOINT = 'https://formsubmit.co/ajax/joelc309@gmail.com';
+const CONTACT_EMAIL = 'joelc309@gmail.com';
+const FORM_ENDPOINT = `https://formsubmit.co/ajax/${CONTACT_EMAIL}`;
 
 export const ContactSection = () => {
   const form    = useRef<HTMLFormElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState('');
+  const [fallback, setFallback] = useState('');
   const isInView = useInView(headerRef, { once: true, amount: 0.4 });
 
   const sendEmail = async (e: React.FormEvent) => {
@@ -40,6 +42,10 @@ export const ContactSection = () => {
       setStatus('success');
       form.current.reset();
     } catch {
+      // Si el servicio falla, el mismo mensaje se puede mandar por correo
+      const subject = `Mensaje del portafolio — ${data.get('user_name')}`;
+      const body = `${data.get('message')}\n\n— ${data.get('user_name')} (${data.get('user_email')})`;
+      setFallback(`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
       setStatus('error');
     }
   };
@@ -173,7 +179,9 @@ export const ContactSection = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                ✕ No se pudo enviar. Intenta de nuevo o escríbeme a joelc309@gmail.com.
+                ✕ No se pudo enviar desde aquí.{' '}
+                <a href={fallback} className={s.fallbackLink}>Envíalo por correo</a>{' '}
+                (ya va escrito) o intenta de nuevo.
               </motion.p>
             )}
           </motion.div>
