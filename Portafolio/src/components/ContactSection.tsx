@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
-import emailjs from '@emailjs/browser';
 import gsap from 'gsap';
 import s from './ContactSection.module.css';
+
+// FormSubmit reenvía los mensajes a este correo (sin cuenta ni claves)
+const FORM_ENDPOINT = 'https://formsubmit.co/ajax/joelc309@gmail.com';
 
 export const ContactSection = () => {
   const form    = useRef<HTMLFormElement>(null);
@@ -10,16 +12,35 @@ export const ContactSection = () => {
   const [status, setStatus] = useState('');
   const isInView = useInView(headerRef, { once: true, amount: 0.4 });
 
-  const sendEmail = (e: React.FormEvent) => {
+  const sendEmail = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.current) return;
     setStatus('sending');
-    if (form.current) {
-      emailjs.sendForm('TU_SERVICE_ID', 'TU_TEMPLATE_ID', form.current, 'TU_PUBLIC_KEY')
-        .then(() => {
-          setStatus('success');
-          form.current?.reset();
-        })
-        .catch(() => setStatus('error'));
+
+    const data = new FormData(form.current);
+    // Campo trampa: los bots lo llenan, las personas no lo ven
+    if (data.get('_honey')) return;
+
+    try {
+      const res = await fetch(FORM_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          nombre:   data.get('user_name'),
+          email:    data.get('user_email'),
+          mensaje:  data.get('message'),
+          _replyto: data.get('user_email'),
+          _subject: `Nuevo mensaje del portafolio — ${data.get('user_name')}`,
+          _template: 'table',
+          _captcha: 'false',
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || String(json.success) !== 'true') throw new Error(json.message);
+      setStatus('success');
+      form.current.reset();
+    } catch {
+      setStatus('error');
     }
   };
 
@@ -88,6 +109,8 @@ export const ContactSection = () => {
           initial="hidden"
           animate={isInView ? 'visible' : 'hidden'}
         >
+          <input type="text" name="_honey" tabIndex={-1} autoComplete="off" aria-hidden="true" style={{ display: 'none' }} />
+
           <motion.div className={s.row} variants={itemVariants}>
             <div className={s.field}>
               <label className={s.label}>Nombre</label>
@@ -150,7 +173,7 @@ export const ContactSection = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                ✕ Error al enviar. Intenta de nuevo.
+                ✕ No se pudo enviar. Intenta de nuevo o escríbeme a joelc309@gmail.com.
               </motion.p>
             )}
           </motion.div>
