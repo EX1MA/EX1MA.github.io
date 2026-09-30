@@ -38,7 +38,9 @@ function App() {
         <motion.main
           key={role}
           initial={{ opacity: 0, x: 20, filter: 'blur(10px)' }}
-          animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+          // filter vuelve a 'none' al terminar: un filter en <main> rompe el pin
+          // (position: fixed) del scroll horizontal de Proyectos
+          animate={{ opacity: 1, x: 0, filter: 'blur(0px)', transitionEnd: { filter: 'none' } }}
           exit={{ opacity: 0, x: -20, filter: 'blur(10px)' }}
           transition={{ duration: 0.4, ease: "easeInOut" }}
         >
