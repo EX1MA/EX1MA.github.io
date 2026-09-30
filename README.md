@@ -26,7 +26,7 @@
 |---|---|
 | UI | React 19 + TypeScript |
 | Build | Vite 7 |
-| Animación | GSAP (ScrollTrigger) y Framer Motion |
+| Animación | GSAP (ScrollTrigger, SplitText) con `@gsap/react` |
 | Estilos | CSS Modules con variables de diseño (`src/global.css`) |
 | Tipografía | Plus Jakarta Sans |
 | Formulario | Web3Forms |

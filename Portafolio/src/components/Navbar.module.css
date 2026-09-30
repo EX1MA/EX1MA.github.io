@@ -8,6 +8,7 @@
   justify-content: space-between;
   align-items: center;
   z-index: 1000;
+  will-change: transform;
   transition: background-color 0.4s ease, backdrop-filter 0.4s ease,
               padding 0.4s ease, border-bottom 0.4s ease;
 }
@@ -36,6 +37,7 @@
 
 /* ── Desktop Links ── */
 .desktopList {
+  position: relative;
   list-style: none;
   display: flex;
   gap: 36px;
@@ -60,14 +62,18 @@
   position: absolute;
   bottom: -2px;
   left: 0;
-  width: 100%;
+  width: 0;
   height: 2px;
   background: var(--primary-color);
   border-radius: 2px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* ── Actions ── */
 .actions {
+  position: relative;
+  z-index: 1001; /* por encima del menú móvil, para poder cerrarlo con la X */
   display: flex;
   align-items: center;
   gap: 12px;
@@ -75,6 +81,7 @@
 
 /* Role Switcher */
 .roleSwitcher {
+  position: relative;
   display: flex;
   background: var(--border-color);
   padding: 3px;
@@ -95,9 +102,19 @@
   transition: all 0.25s ease;
 }
 
-.roleBtn.active {
+.roleBtn { position: relative; z-index: 1; }
+
+.roleBtn.active { color: var(--primary-color); }
+
+/* Píldora que se desliza al botón activo (posición y ancho los pone GSAP) */
+.roleThumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: 0;
+  border-radius: 50px;
   background-color: var(--card-bg);
-  color: var(--primary-color);
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
@@ -143,6 +160,11 @@
 .barTop  { transform: translateY(7px) rotate(45deg); }
 .barMid  { opacity: 0; transform: scaleX(0); }
 .barBot  { transform: translateY(-7px) rotate(-45deg); }
+
+/* ── Mobile layer (oculto hasta que GSAP lo abre) ── */
+.mobileLayer {
+  visibility: hidden;
+}
 
 /* ── Mobile Backdrop ── */
 .backdrop {

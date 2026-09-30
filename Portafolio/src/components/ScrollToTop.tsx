@@ -1,47 +1,32 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useRef } from 'react';
+import { gsap, ScrollTrigger, useGSAP } from '../animations/gsap';
 import styles from './ScrollToTop.module.css';
 
 export const ScrollToTop = () => {
-  const [isVisible, setIsVisible] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
-  const toggleVisibility = () => {
-    if (window.pageYOffset > 300) {
-      setIsVisible(true);
-    } else {
-      setIsVisible(false);
-    }
-  };
-
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
+  useGSAP(() => {
+    const btn = btnRef.current!;
+    const reveal = gsap.fromTo(btn,
+      { autoAlpha: 0, scale: 0.4, rotate: -90 },
+      { autoAlpha: 1, scale: 1, rotate: 0, duration: 0.5, ease: 'back.out(2)', paused: true },
+    );
+    ScrollTrigger.create({
+      start: 300,
+      end: 'max',
+      onEnter: () => reveal.play(),
+      onLeaveBack: () => reveal.reverse(),
     });
-  };
-
-  useEffect(() => {
-    window.addEventListener('scroll', toggleVisibility);
-    return () => {
-      window.removeEventListener('scroll', toggleVisibility);
-    };
-  }, []);
+  });
 
   return (
-    <AnimatePresence>
-      {isVisible && (
-        <motion.button
-          onClick={scrollToTop}
-          className={styles.scrollBtn}
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.5 }}
-          whileHover={{ y: -5 }}
-          aria-label="Volver arriba"
-        >
-          ↑
-        </motion.button>
-      )}
-    </AnimatePresence>
+    <button
+      ref={btnRef}
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      className={styles.scrollBtn}
+      aria-label="Volver arriba"
+    >
+      ↑
+    </button>
   );
 };

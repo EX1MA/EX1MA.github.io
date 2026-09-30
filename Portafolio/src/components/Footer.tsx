@@ -1,4 +1,5 @@
-import { motion } from 'framer-motion';
+import { useRef } from 'react';
+import { useReveal } from '../animations/useReveal';
 import s from './Footer.module.css';
 
 const SOCIAL_LINKS = [
@@ -28,17 +29,20 @@ const NAV_LINKS = [
 ];
 
 export const Footer = () => {
+  const footerRef = useRef<HTMLElement>(null);
+  useReveal(footerRef);
+
   const scrollTo = (id: string) =>
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
 
   return (
-    <footer className={s.footer}>
+    <footer ref={footerRef} className={s.footer}>
       <div className={s.inner}>
         {/* Top row */}
         <div className={s.top}>
           <div className={s.brand}>
-            <span className={s.logo}>Joel Contreras</span>
-            <p className={s.tagline}>
+            <span className={s.logo} data-reveal="title">Joel Contreras</span>
+            <p className={s.tagline} data-reveal="lines">
               Construyendo experiencias digitales con propósito y precisión.
             </p>
           </div>
@@ -51,20 +55,18 @@ export const Footer = () => {
             ))}
           </nav>
 
-          <div className={s.socials}>
+          <div className={s.socials} data-reveal="up">
             {SOCIAL_LINKS.map(({ label, href, icon }) => (
-              <motion.a
+              <a
                 key={label}
                 href={href}
                 target="_blank"
                 rel="noreferrer"
                 className={s.socialBtn}
-                whileHover={{ scale: 1.1, y: -3 }}
-                whileTap={{ scale: 0.95 }}
                 aria-label={label}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">{icon}</svg>
-              </motion.a>
+              </a>
             ))}
           </div>
         </div>

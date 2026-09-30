@@ -6,3 +6,33 @@
   overflow-x: hidden; /* Evita scroll horizontal indeseado */
   transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+/* ── Cortina del cambio de perfil ── */
+.roleOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  pointer-events: none;
+  visibility: hidden;
+  overflow: hidden;
+}
+
+.roleLayer {
+  position: absolute;
+  inset: 0;
+  background: var(--secondary-color);
+  will-change: transform; /* GSAP la mueve con yPercent; el contenedor está oculto en reposo */
+}
+
+.roleLayerAccent {
+  display: grid;
+  place-items: center;
+}
+
+.roleLabel {
+  font-size: clamp(3rem, 12vw, 9rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.2; /* espacio para que la máscara de SplitText no corte las letras */
+  color: #fff;
+}

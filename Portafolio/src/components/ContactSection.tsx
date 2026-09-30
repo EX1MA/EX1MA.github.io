@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
-import { motion, useInView } from 'framer-motion';
-import gsap from 'gsap';
+import { gsap, useGSAP } from '../animations/gsap';
+import { useReveal } from '../animations/useReveal';
+import { prefersReducedMotion } from '../utils/motion';
 import s from './ContactSection.module.css';
 
 const CONTACT_EMAIL = 'joelc309@gmail.com';
@@ -11,10 +12,18 @@ const WEB3FORMS_KEY = '487867e3-52dd-488f-bafb-8ade429a3f0e';
 
 export const ContactSection = () => {
   const form    = useRef<HTMLFormElement>(null);
-  const headerRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
   const [status, setStatus] = useState('');
   const [fallback, setFallback] = useState('');
-  const isInView = useInView(headerRef, { once: true, amount: 0.4 });
+
+  useReveal(sectionRef);
+
+  // El aviso de éxito o error aparece con un pequeño rebote
+  useGSAP(() => {
+    if (status !== 'success' && status !== 'error') return;
+    if (prefersReducedMotion()) return;
+    gsap.from('[data-status]', { autoAlpha: 0, y: 12, scale: 0.97, duration: 0.6, ease: 'back.out(2)' });
+  }, { scope: sectionRef, dependencies: [status] });
 
   const sendEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,66 +68,44 @@ export const ContactSection = () => {
     gsap.to(e.currentTarget, { '--border-glow': '0', duration: 0.3 });
   };
 
-  const containerVariants = {
-    hidden: {},
-    visible: { transition: { staggerChildren: 0.12, delayChildren: 0.2 } },
-  };
-  const itemVariants = {
-    hidden:   { opacity: 0, y: 30 },
-    visible:  { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' as const } },
-  };
 
   return (
-    <section id="contact" className="section-container">
-      <motion.div
-        ref={headerRef}
-        initial={{ opacity: 0, y: 30 }}
-        animate={isInView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-        className={s.header}
-      >
-        <span className="section-label">Contacto</span>
-        <h2 className="section-title">¿Tienes un proyecto?</h2>
-        <p className="section-subtitle">
+    <section id="contact" ref={sectionRef} className="section-container">
+      <div className={s.header}>
+        <span className="section-label" data-reveal="label">Contacto</span>
+        <h2 className="section-title" data-reveal="title">¿Tienes un proyecto?</h2>
+        <p className="section-subtitle" data-reveal="lines">
           Cuéntame tu idea. Respondo en menos de 24 horas.
         </p>
-      </motion.div>
+      </div>
 
       <div className={s.layout}>
         {/* Info column */}
-        <motion.div
-          className={s.infoCol}
-          variants={containerVariants}
-          initial="hidden"
-          animate={isInView ? 'visible' : 'hidden'}
-        >
+        <div className={s.infoCol}>
           {[
             { icon: '✉', label: 'Email', value: 'joelc309@gmail.com' },
             { icon: '📍', label: 'Ubicación', value: 'Naucalpan, Edo. Méx. · Remoto' },
             { icon: '⚡', label: 'Disponibilidad', value: 'Abierto a proyectos' },
           ].map(item => (
-            <motion.div key={item.label} className={s.infoItem} variants={itemVariants}>
+            <div key={item.label} className={s.infoItem} data-reveal="up">
               <span className={s.infoIcon}>{item.icon}</span>
               <div>
                 <p className={s.infoLabel}>{item.label}</p>
                 <p className={s.infoValue}>{item.value}</p>
               </div>
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
 
         {/* Form column */}
-        <motion.form
+        <form
           ref={form}
           onSubmit={sendEmail}
           className={s.form}
-          variants={containerVariants}
-          initial="hidden"
-          animate={isInView ? 'visible' : 'hidden'}
         >
           <input type="text" name="_honey" tabIndex={-1} autoComplete="off" aria-hidden="true" style={{ display: 'none' }} />
 
-          <motion.div className={s.row} variants={itemVariants}>
+          <div className={s.row} data-reveal="up">
             <div className={s.field}>
               <label className={s.label}>Nombre</label>
               <input
@@ -137,9 +124,9 @@ export const ContactSection = () => {
                 onFocus={onFocus} onBlur={onBlur}
               />
             </div>
-          </motion.div>
+          </div>
 
-          <motion.div className={s.field} variants={itemVariants}>
+          <div className={s.field} data-reveal="up">
             <label className={s.label}>Mensaje</label>
             <textarea
               name="message" rows={5} required
@@ -147,15 +134,13 @@ export const ContactSection = () => {
               placeholder="Cuéntame tu proyecto..."
               onFocus={onFocus} onBlur={onBlur}
             />
-          </motion.div>
+          </div>
 
-          <motion.div variants={itemVariants}>
-            <motion.button
+          <div data-reveal="up">
+            <button
               type="submit"
               className={s.submitBtn}
               disabled={status === 'sending'}
-              whileHover={{ scale: 1.03, y: -2 }}
-              whileTap={{ scale: 0.97 }}
             >
               {status === 'sending' ? 'Enviando…' : 'Enviar Mensaje'}
               {status !== 'sending' && (
@@ -163,30 +148,30 @@ export const ContactSection = () => {
                   <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
                 </svg>
               )}
-            </motion.button>
+            </button>
 
             {status === 'success' && (
-              <motion.p
+              <p
+                data-status
+                role="status"
                 className={s.successMsg}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
               >
                 ✓ ¡Mensaje enviado! Te responderé pronto.
-              </motion.p>
+              </p>
             )}
             {status === 'error' && (
-              <motion.p
+              <p
+                data-status
+                role="status"
                 className={s.errorMsg}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
               >
                 ✕ No se pudo enviar desde aquí.{' '}
                 <a href={fallback} className={s.fallbackLink}>Envíalo por correo</a>{' '}
                 (ya va escrito) o intenta de nuevo.
-              </motion.p>
+              </p>
             )}
-          </motion.div>
-        </motion.form>
+          </div>
+        </form>
       </div>
     </section>
   );

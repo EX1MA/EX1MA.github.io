@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import gsap from 'gsap';
+import { gsap } from '../animations/gsap';
 import styles from './CustomCursor.module.css';
 import { prefersReducedMotion } from '../utils/motion';
 

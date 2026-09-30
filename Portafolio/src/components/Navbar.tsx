@@ -1,11 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { gsap, ScrollTrigger, useGSAP } from '../animations/gsap';
 import navStyles from './Navbar.module.css';
+import { prefersReducedMotion } from '../utils/motion';
 import type { Role } from '../types';
-
-gsap.registerPlugin(ScrollTrigger);
 
 const NAV_LINKS = [
   { id: 'about',    label: 'Sobre Mí' },
@@ -26,26 +23,85 @@ export const Navbar = ({ currentRole, onSwitchRole }: NavbarProps) => {
     window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   );
   const [active, setActive] = useState('');
-  const navRef = useRef<HTMLElement>(null);
+  const navRef       = useRef<HTMLElement>(null);
+  const listRef      = useRef<HTMLUListElement>(null);
+  const indicatorRef = useRef<HTMLSpanElement>(null);
+  const switcherRef  = useRef<HTMLDivElement>(null);
+  const thumbRef     = useRef<HTMLSpanElement>(null);
+  const menuTl       = useRef<gsap.core.Timeline | null>(null);
+  const isOpenRef    = useRef(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  // GSAP: scroll-triggered navbar backdrop
-  useEffect(() => {
-    const nav = navRef.current;
-    if (!nav) return;
+  // Fondo al hacer scroll, y se esconde al bajar / reaparece al subir
+  useGSAP(() => {
+    const nav = navRef.current!;
+    const reduced = prefersReducedMotion();
+    const show = gsap.quickTo(nav, 'yPercent', { duration: 0.45, ease: 'power3.out' });
 
-    const ctx = gsap.context(() => {
-      ScrollTrigger.create({
-        start: 'top -60',
-        onEnter:    () => nav.classList.add(navStyles.scrolled),
-        onLeaveBack:() => nav.classList.remove(navStyles.scrolled),
-      });
+    ScrollTrigger.create({
+      start: 'top -60',
+      end: 'max',
+      onToggle: self => nav.classList.toggle(navStyles.scrolled, self.isActive),
+      onUpdate: self => {
+        if (reduced || isOpenRef.current) return;
+        show(self.direction === 1 && self.scroll() > 400 ? -110 : 0);
+      },
+      onLeaveBack: () => show(0),
     });
-    return () => ctx.revert();
-  }, []);
+
+    // Menú móvil: una sola línea de tiempo que se reproduce o se invierte
+    const q = gsap.utils.selector(nav);
+    menuTl.current = gsap.timeline({ paused: true, defaults: { ease: 'expo.out' } })
+      .set(q('[data-mobile]'), { visibility: 'visible' })
+      .fromTo(q('[data-backdrop]'), { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.4 }, 0)
+      .fromTo(q('[data-menu]'), { xPercent: 100 }, { xPercent: 0, duration: 0.7 }, 0)
+      .fromTo(q('[data-menu] li'), { x: 40, autoAlpha: 0 }, { x: 0, autoAlpha: 1, duration: 0.6, stagger: 0.06 }, 0.15);
+    if (reduced) menuTl.current.duration(0.01);
+  }, { scope: navRef });
+
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+    const tl = menuTl.current;
+    if (!tl) return;
+    if (isOpen) {
+      gsap.to(navRef.current, { yPercent: 0, duration: 0.3 });
+      tl.timeScale(1).play();
+    } else {
+      tl.timeScale(1.6).reverse();
+    }
+  }, [isOpen]);
+
+  // Subrayado que se desliza hacia la sección activa
+  useGSAP(() => {
+    const list = listRef.current, bar = indicatorRef.current;
+    if (!list || !bar) return;
+    const place = (duration: number) => {
+      const li = list.querySelector<HTMLElement>(`[data-id="${active}"]`);
+      if (!li) { gsap.to(bar, { autoAlpha: 0, duration: 0.3 }); return; }
+      gsap.to(bar, { x: li.offsetLeft, width: li.offsetWidth, autoAlpha: 1, duration, ease: 'expo.out', overwrite: true });
+    };
+    place(prefersReducedMotion() ? 0 : 0.6);
+    const onResize = () => place(0);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, { dependencies: [active] });
+
+  // Píldora del selector Dev / Diseño
+  useGSAP(() => {
+    const box = switcherRef.current, thumb = thumbRef.current;
+    if (!box || !thumb) return;
+    const place = (duration: number) => {
+      const btn = box.querySelector<HTMLElement>(`[data-role="${currentRole}"]`);
+      if (btn) gsap.to(thumb, { x: btn.offsetLeft - 3, width: btn.offsetWidth, duration, ease: 'back.out(1.4)', overwrite: true });
+    };
+    place(prefersReducedMotion() ? 0 : 0.55);
+    const onResize = () => place(0);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, { dependencies: [currentRole] });
 
   // Track active section with IntersectionObserver
   useEffect(() => {
@@ -58,16 +114,11 @@ export const Navbar = ({ currentRole, onSwitchRole }: NavbarProps) => {
     );
     sections.forEach(s => s && observer.observe(s));
     return () => observer.disconnect();
-  }, []);
+  }, [currentRole]);
 
   const scrollTo = (id: string) => {
     setIsOpen(false);
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const menuVariants = {
-    closed: { x: '100%', opacity: 0 },
-    open:   { x: 0, opacity: 1, transition: { type: 'spring' as const, stiffness: 90, damping: 20 } },
   };
 
   return (
@@ -78,37 +129,37 @@ export const Navbar = ({ currentRole, onSwitchRole }: NavbarProps) => {
       </div>
 
       {/* Desktop links */}
-      <ul className={navStyles.desktopList}>
+      <ul ref={listRef} className={navStyles.desktopList}>
         {NAV_LINKS.map(({ id, label }) => (
           <li
             key={id}
+            data-id={id}
             className={`${navStyles.navLink} ${active === id ? navStyles.activeLink : ''}`}
             onClick={() => scrollTo(id)}
           >
             {label}
-            {active === id && (
-              <motion.span
-                layoutId="nav-underline"
-                className={navStyles.underline}
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              />
-            )}
           </li>
         ))}
+        <span ref={indicatorRef} className={navStyles.underline} aria-hidden="true" />
       </ul>
 
       {/* Actions */}
       <div className={navStyles.actions}>
-        <div className={navStyles.roleSwitcher}>
+        <div ref={switcherRef} className={navStyles.roleSwitcher}>
+          <span ref={thumbRef} className={navStyles.roleThumb} aria-hidden="true" />
           <button
+            data-role="developer"
             className={`${navStyles.roleBtn} ${currentRole === 'developer' ? navStyles.active : ''}`}
             onClick={() => onSwitchRole('developer')}
+            aria-pressed={currentRole === 'developer'}
           >
             {'</>'} Dev
           </button>
           <button
+            data-role="designer"
             className={`${navStyles.roleBtn} ${currentRole === 'designer' ? navStyles.active : ''}`}
             onClick={() => onSwitchRole('designer')}
+            aria-pressed={currentRole === 'designer'}
           >
             ✦ Diseño
           </button>
@@ -118,46 +169,30 @@ export const Navbar = ({ currentRole, onSwitchRole }: NavbarProps) => {
           {theme === 'light' ? '🌙' : '☀️'}
         </button>
 
-        <button className={navStyles.hamburger} onClick={() => setIsOpen(!isOpen)} aria-label="Menú">
+        <button className={navStyles.hamburger} onClick={() => setIsOpen(!isOpen)} aria-label="Menú" aria-expanded={isOpen}>
           <span className={`${navStyles.bar} ${isOpen ? navStyles.barTop : ''}`} />
           <span className={`${navStyles.bar} ${isOpen ? navStyles.barMid : ''}`} />
           <span className={`${navStyles.bar} ${isOpen ? navStyles.barBot : ''}`} />
         </button>
       </div>
 
-      {/* Mobile menu */}
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            <motion.div
-              className={navStyles.backdrop}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsOpen(false)}
-            />
-            <motion.div
-              className={navStyles.mobileMenu}
-              variants={menuVariants}
-              initial="closed"
-              animate="open"
-              exit="closed"
+      {/* Mobile menu (siempre montado; GSAP lo muestra y lo oculta) */}
+      <div data-mobile className={navStyles.mobileLayer} aria-hidden={!isOpen} inert={!isOpen}>
+        <div data-backdrop className={navStyles.backdrop} onClick={() => setIsOpen(false)} />
+        <div data-menu className={navStyles.mobileMenu}>
+          <ul className={navStyles.mobileList}>
+            {NAV_LINKS.map(({ id, label }) => (
+              <li key={id} onClick={() => scrollTo(id)}>{label}</li>
+            ))}
+            <li
+              className={navStyles.mobileRoleToggle}
+              onClick={() => { setIsOpen(false); onSwitchRole(currentRole === 'developer' ? 'designer' : 'developer'); }}
             >
-              <ul className={navStyles.mobileList}>
-                {NAV_LINKS.map(({ id, label }) => (
-                  <li key={id} onClick={() => scrollTo(id)}>{label}</li>
-                ))}
-                <li
-                  className={navStyles.mobileRoleToggle}
-                  onClick={() => onSwitchRole(currentRole === 'developer' ? 'designer' : 'developer')}
-                >
-                  Cambiar a {currentRole === 'developer' ? 'Diseñador' : 'Dev'}
-                </li>
-              </ul>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+              Cambiar a {currentRole === 'developer' ? 'Diseñador' : 'Dev'}
+            </li>
+          </ul>
+        </div>
+      </div>
     </nav>
   );
 };

@@ -143,7 +143,7 @@
   cursor: pointer;
   letter-spacing: 0.04em;
   box-shadow: 0 6px 24px color-mix(in srgb, var(--primary-color) 38%, transparent);
-  transition: box-shadow 0.3s ease, filter 0.3s ease;
+  transition: box-shadow 0.3s ease, filter 0.3s ease, translate 0.3s ease, scale 0.2s ease;
 }
 
 .submitBtn:disabled {
@@ -151,7 +151,10 @@
   cursor: not-allowed;
 }
 
+.submitBtn:active:not(:disabled) { scale: 0.97; }
+
 .submitBtn:hover:not(:disabled) {
+  translate: 0 -2px;
   box-shadow: 0 10px 36px color-mix(in srgb, var(--primary-color) 52%, transparent);
   filter: brightness(1.08);
 }

@@ -163,6 +163,13 @@
   overflow: hidden;
   vertical-align: bottom;
   margin-right: 0.18em;
+  perspective: 600px;
+  padding-bottom: 0.04em; /* que no se corten los descendentes al girar */
+}
+
+.char {
+  display: inline-block;
+  will-change: transform;
 }
 
 .word {
@@ -171,7 +178,8 @@
 }
 
 /* Make the name gradient */
-.title .wordWrapper:last-child .word {
+/* Cada letra pinta su parte del degradado (tamaño y posición los calcula GSAP) */
+.title [data-gradient] .char {
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
