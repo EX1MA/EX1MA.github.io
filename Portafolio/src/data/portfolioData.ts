@@ -86,6 +86,57 @@ export const portfolioData: Record<'developer' | 'designer', RoleContent> = {
         ],
         status: "Completado",
         category: "Landing Page"
+      },
+      {
+        id: 4,
+        title: "PC Remote",
+        client: "Proyecto personal",
+        description: "Web app instalable (PWA) para controlar la PC desde el celular: ratón, teclado, sonido, apps, archivos, terminal y pantalla en vivo. Servidor FastAPI accesible solo por HTTPS dentro de Tailscale.",
+        image: "https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=1200&auto=format&fit=crop",
+        technologies: ["Python", "FastAPI", "PWA", "JavaScript", "Tailscale", "xterm.js"],
+        features: [
+          "Touchpad, teclado y atajos del sistema",
+          "Control de música y volumen",
+          "Envío de archivos y portapapeles",
+          "Terminal real y pantalla en vivo"
+        ],
+        year: 2026,
+        status: "Completado",
+        category: "Web App · PWA"
+      },
+      {
+        id: 5,
+        title: "BuddyFinance",
+        client: "Proyecto personal",
+        description: "App Android de finanzas personales para controlar gastos, ingresos, créditos vehiculares, presupuestos y metas de ahorro. 100% local y sin conexión a internet.",
+        image: "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?q=80&w=1200&auto=format&fit=crop",
+        technologies: ["Kotlin", "Jetpack Compose", "Material 3", "Room", "MVVM", "WorkManager"],
+        features: [
+          "Gastos, ingresos y presupuestos",
+          "Gráficas y resumen mensual",
+          "PIN y huella digital",
+          "Widget y exportación a CSV"
+        ],
+        year: 2026,
+        status: "Completado",
+        category: "App Android"
+      },
+      {
+        id: 6,
+        title: "Habitus",
+        client: "Proyecto personal",
+        description: "App de hábitos personales con Kotlin Multiplatform: un solo código compartido para Android (Jetpack Compose) e iOS, con base de datos local multiplataforma.",
+        image: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?q=80&w=1200&auto=format&fit=crop",
+        technologies: ["Kotlin Multiplatform", "Jetpack Compose", "SQLDelight", "Clean Architecture"],
+        features: [
+          "Crear, editar y eliminar hábitos",
+          "Seguimiento de progreso diario",
+          "Base de datos local multiplataforma",
+          "Código compartido Android / iOS"
+        ],
+        year: 2025,
+        status: "En Desarrollo",
+        category: "App Multiplataforma"
       }
     ],
     skills: [
@@ -98,6 +149,7 @@ export const portfolioData: Record<'developer' | 'designer', RoleContent> = {
       { name: 'Next.js', icon: 'https://cdn.svgporn.com/logos/nextjs-icon.svg' },
       { name: 'Vite', icon: 'https://cdn.svgporn.com/logos/vite.svg' },
       { name: 'Python', icon: 'https://cdn.svgporn.com/logos/python.svg' },
+      { name: 'Kotlin', icon: 'https://cdn.svgporn.com/logos/kotlin-icon.svg' },
       { name: 'AWS', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/amazonwebservices/amazonwebservices-original-wordmark.svg' },
       { name: 'Figma', icon: 'https://cdn.svgporn.com/logos/figma.svg' }
     ]
