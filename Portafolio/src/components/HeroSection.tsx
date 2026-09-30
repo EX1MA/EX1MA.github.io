@@ -52,8 +52,6 @@ export const HeroSection = ({ data }: HeroSectionProps) => {
   const buttonsRef  = useRef<HTMLDivElement>(null);
   const tlRef       = useRef<gsap.core.Timeline | null>(null);
 
-  if (!data) return <div style={{ padding: 100, color: 'red' }}>Error: Faltan datos del Hero</div>;
-
   const scrollTo = (id: string) =>
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
 
@@ -76,6 +74,7 @@ export const HeroSection = ({ data }: HeroSectionProps) => {
 
   /* Entrance timeline (re-runs on role switch via remount) */
   useEffect(() => {
+    if (!data) return;
     if (tlRef.current) tlRef.current.kill();
 
     // Get word spans inside the h1
@@ -105,6 +104,8 @@ export const HeroSection = ({ data }: HeroSectionProps) => {
 
     return () => { tl.kill(); };
   }, [data]);
+
+  if (!data) return <div style={{ padding: 100, color: 'red' }}>Error: Faltan datos del Hero</div>;
 
   const titleWords = data.title.split(' ');
 
