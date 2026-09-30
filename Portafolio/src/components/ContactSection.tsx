@@ -3,9 +3,11 @@ import { motion, useInView } from 'framer-motion';
 import gsap from 'gsap';
 import s from './ContactSection.module.css';
 
-// FormSubmit reenvía los mensajes a este correo (sin cuenta ni claves)
 const CONTACT_EMAIL = 'joelc309@gmail.com';
-const FORM_ENDPOINT = `https://formsubmit.co/ajax/${CONTACT_EMAIL}`;
+// Web3Forms reenvía los mensajes a joelc309@gmail.com. La access key es
+// pública por diseño: solo permite enviar a ese correo.
+const FORM_ENDPOINT = 'https://api.web3forms.com/submit';
+const WEB3FORMS_KEY = '487867e3-52dd-488f-bafb-8ade429a3f0e';
 
 export const ContactSection = () => {
   const form    = useRef<HTMLFormElement>(null);
@@ -21,24 +23,23 @@ export const ContactSection = () => {
 
     const data = new FormData(form.current);
     // Campo trampa: los bots lo llenan, las personas no lo ven
-    if (data.get('_honey')) return;
+    if (data.get('_honey')) { setStatus('success'); return; }
 
     try {
       const res = await fetch(FORM_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
-          nombre:   data.get('user_name'),
-          email:    data.get('user_email'),
-          mensaje:  data.get('message'),
-          _replyto: data.get('user_email'),
-          _subject: `Nuevo mensaje del portafolio — ${data.get('user_name')}`,
-          _template: 'table',
-          _captcha: 'false',
+          access_key: WEB3FORMS_KEY,
+          subject:    `Nuevo mensaje del portafolio — ${data.get('user_name')}`,
+          from_name:  'Portafolio ex1ma.github.io',
+          name:       data.get('user_name'),
+          email:      data.get('user_email'), // Web3Forms lo usa como Reply-To
+          message:    data.get('message'),
         }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok || String(json.success) !== 'true') throw new Error(json.message);
+      if (!res.ok || json.success !== true) throw new Error(json.message);
       setStatus('success');
       form.current.reset();
     } catch {
