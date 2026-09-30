@@ -39,6 +39,7 @@
 }
 
 .logo {
+  display: inline-block;
   font-size: 1.5rem;
   font-weight: 800;
   color: white;
@@ -96,10 +97,14 @@
   font-weight: 800;
   letter-spacing: 0.04em;
   text-decoration: none;
-  transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+  transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease, translate 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), scale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+.socialBtn:active { scale: 0.95; }
+
 .socialBtn:hover {
+  translate: 0 -3px;
+  scale: 1.1;
   background: var(--primary-color);
   border-color: var(--primary-color);
   color: white;

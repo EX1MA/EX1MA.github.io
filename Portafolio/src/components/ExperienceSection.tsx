@@ -1,59 +1,82 @@
-import { motion } from 'framer-motion';
+import { useRef } from 'react';
+import { gsap, useGSAP } from '../animations/gsap';
+import { useReveal } from '../animations/useReveal';
+import { prefersReducedMotion } from '../utils/motion';
 import s from './ExperienceSection.module.css';
 import { certifications, education, experience, languages } from '../data/experience';
 
 export const CV_URL = `${import.meta.env.BASE_URL}cv-joel-contreras.pdf`;
 
-const fadeUp = {
-  initial: { opacity: 0, y: 24 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, amount: 0.3 },
-};
+export const ExperienceSection = () => {
+  const sectionRef  = useRef<HTMLElement>(null);
+  const timelineRef = useRef<HTMLOListElement>(null);
 
-export const ExperienceSection = () => (
-  <section id="experience" className="section-container">
-    <motion.div className={s.header} {...fadeUp} transition={{ duration: 0.6, ease: 'easeOut' }}>
+  useReveal(sectionRef);
+
+  useGSAP(() => {
+    const list = timelineRef.current;
+    if (!list || prefersReducedMotion()) return;
+
+    // La línea se dibuja conforme se recorre la trayectoria
+    gsap.fromTo(list.querySelector('[data-line]'), { scaleY: 0 }, {
+      scaleY: 1, ease: 'none',
+      scrollTrigger: { trigger: list, start: 'top 70%', end: 'bottom 65%', scrub: 0.8 },
+    });
+
+    // Cada puesto entra desde la izquierda y su punto se "enciende" al alcanzarlo
+    gsap.utils.toArray<HTMLElement>('[data-job]', list).forEach(job => {
+      gsap.timeline({ scrollTrigger: { trigger: job, start: 'top 75%', once: true } })
+        .from(job.querySelector('[data-dot]'), { scale: 0, duration: 0.6, ease: 'back.out(3)' })
+        .from(job.querySelectorAll('[data-job-part]'), {
+          autoAlpha: 0, x: -30, duration: 0.8, stagger: 0.07, ease: 'expo.out',
+        }, 0.05);
+    });
+  }, { scope: sectionRef });
+
+  return (
+  <section id="experience" ref={sectionRef} className="section-container">
+    <div className={s.header}>
       <div>
-        <span className="section-label">Trayectoria</span>
-        <h2 className="section-title">Experiencia y Formación</h2>
-        <p className="section-subtitle">
+        <span className="section-label" data-reveal="label">Trayectoria</span>
+        <h2 className="section-title" data-reveal="title">Experiencia y Formación</h2>
+        <p className="section-subtitle" data-reveal="lines">
           Más de 10 años entre el diseño gráfico y el desarrollo frontend.
         </p>
       </div>
-      <a href={CV_URL} download className={s.cvBtn}>
+      <a href={CV_URL} download data-reveal="up" className={s.cvBtn}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />
         </svg>
         Descargar CV
       </a>
-    </motion.div>
+    </div>
 
     <div className={s.layout}>
       {/* Experiencia */}
-      <ol className={s.timeline}>
-        {experience.map((job, i) => (
-          <motion.li
+      <ol ref={timelineRef} className={s.timeline}>
+        <li data-line role="presentation" className={s.lineFill} />
+        {experience.map(job => (
+          <li
             key={job.company}
+            data-job
             className={`${s.item} ${job.current ? s.current : ''}`}
-            {...fadeUp}
-            transition={{ duration: 0.5, delay: i * 0.05, ease: 'easeOut' }}
           >
-            <span className={s.dot} aria-hidden="true" />
-            <div className={s.itemHead}>
+            <span data-dot className={s.dot} aria-hidden="true" />
+            <div data-job-part className={s.itemHead}>
               <h3 className={s.role}>{job.role}</h3>
               <span className={s.period}>{job.period}</span>
             </div>
-            <p className={s.company}>
+            <p data-job-part className={s.company}>
               {job.company}{job.place && <span className={s.place}> — {job.place}</span>}
             </p>
-            <p className={s.desc}>{job.description}</p>
-          </motion.li>
+            <p data-job-part className={s.desc}>{job.description}</p>
+          </li>
         ))}
       </ol>
 
       {/* Formación */}
       <div className={s.aside}>
-        <motion.div className={s.card} {...fadeUp} transition={{ duration: 0.5, ease: 'easeOut' }}>
+        <div className={s.card} data-reveal="up">
           <h3 className={s.cardTitle}>Certificaciones</h3>
           <ul className={s.list}>
             {certifications.map(c => (
@@ -67,9 +90,9 @@ export const ExperienceSection = () => (
               </li>
             ))}
           </ul>
-        </motion.div>
+        </div>
 
-        <motion.div className={s.card} {...fadeUp} transition={{ duration: 0.5, delay: 0.1, ease: 'easeOut' }}>
+        <div className={s.card} data-reveal="up">
           <h3 className={s.cardTitle}>Educación</h3>
           <ul className={s.list}>
             {education.map(e => (
@@ -80,9 +103,9 @@ export const ExperienceSection = () => (
               </li>
             ))}
           </ul>
-        </motion.div>
+        </div>
 
-        <motion.div className={s.card} {...fadeUp} transition={{ duration: 0.5, delay: 0.2, ease: 'easeOut' }}>
+        <div className={s.card} data-reveal="up">
           <h3 className={s.cardTitle}>Idiomas</h3>
           <ul className={s.langs}>
             {languages.map(l => (
@@ -92,8 +115,9 @@ export const ExperienceSection = () => (
               </li>
             ))}
           </ul>
-        </motion.div>
+        </div>
       </div>
     </div>
   </section>
 );
+};

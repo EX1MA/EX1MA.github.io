@@ -57,8 +57,20 @@
   top: 8px;
   bottom: 8px;
   width: 2px;
-  background: linear-gradient(to bottom, var(--primary-color), var(--border-color) 40%);
+  background: var(--border-color);
   border-radius: 2px;
+}
+
+/* Parte coloreada de la línea: GSAP la escala de 0 a 1 con el scroll */
+.lineFill {
+  position: absolute;
+  left: 5px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, var(--primary-color), var(--accent-color));
+  transform-origin: 50% 0%;
 }
 
 .item {

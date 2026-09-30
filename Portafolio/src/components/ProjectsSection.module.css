@@ -27,6 +27,34 @@
 }
 
 /* ── Horizontal Track ────────────────── */
+.hintRow {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Progreso del scroll horizontal (solo tiene sentido en escritorio) */
+.progress {
+  position: relative;
+  width: 160px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--border-color);
+  overflow: hidden;
+}
+
+.progressBar {
+  position: absolute;
+  inset: 0;
+  background: var(--primary-color);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+
+@media (max-width: 899px) {
+  .progress { display: none; }
+}
+
 .track {
   display: flex;
   gap: 28px;
@@ -43,6 +71,7 @@
 
 .projectNumber {
   position: absolute;
+  overflow: hidden;
   top: -40px;
   left: 0;
   font-size: 5rem;

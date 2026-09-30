@@ -1,6 +1,5 @@
 import { useRef } from 'react';
-import { motion } from 'framer-motion';
-import gsap from 'gsap';
+import { gsap, useGSAP } from '../animations/gsap';
 import type { Project } from '../types';
 import styles from './ProjectCard.module.css';
 
@@ -15,25 +14,34 @@ const STATUS_MAP: Record<string, { label: string; cls: string }> = {
 
 export const ProjectCard = ({ project }: ProjectCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const tilt    = useRef<{ rx: gsap.QuickToFunc; ry: gsap.QuickToFunc } | null>(null);
 
-  // Subtle tilt on mouse move
+  // Inclinación suave siguiendo el mouse (quickTo reutiliza un solo tween por eje)
+  useGSAP(() => {
+    gsap.set(cardRef.current, { transformPerspective: 900 });
+    tilt.current = {
+      rx: gsap.quickTo(cardRef.current, 'rotationX', { duration: 0.5, ease: 'power3.out' }),
+      ry: gsap.quickTo(cardRef.current, 'rotationY', { duration: 0.5, ease: 'power3.out' }),
+    };
+  }, { scope: cardRef });
+
   const onMove = (e: React.MouseEvent) => {
-    const el  = cardRef.current!;
-    const box = el.getBoundingClientRect();
-    const rx  = ((e.clientY - box.top)  / box.height - 0.5) * 10;
-    const ry  = ((e.clientX - box.left) / box.width  - 0.5) * -10;
-    gsap.to(el, { rotateX: rx, rotateY: ry, duration: 0.35, ease: 'power2.out', transformPerspective: 900 });
+    const box = e.currentTarget.getBoundingClientRect();
+    tilt.current?.rx(((e.clientY - box.top)  / box.height - 0.5) * 10);
+    tilt.current?.ry(((e.clientX - box.left) / box.width  - 0.5) * -10);
   };
 
   const onLeave = () => {
-    gsap.to(cardRef.current, { rotateX: 0, rotateY: 0, duration: 0.6, ease: 'elastic.out(1, 0.5)' });
+    tilt.current?.rx(0);
+    tilt.current?.ry(0);
   };
 
   const statusInfo = project.status ? STATUS_MAP[project.status] : null;
 
   return (
-    <motion.div
+    <div
       ref={cardRef}
+      data-card
       className={`${styles.card} ${project.highlight ? styles.highlighted : ''}`}
       onMouseMove={onMove}
       onMouseLeave={onLeave}
@@ -41,7 +49,7 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
     >
       {/* ── Image ── */}
       <div className={styles.imageWrap}>
-        <img src={project.image} alt={project.title} className={styles.img} loading="lazy" />
+        <img data-img src={project.image} alt={project.title} className={styles.img} loading="lazy" />
 
         {/* Hover overlay */}
         <div className={styles.overlay}>
@@ -102,35 +110,31 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
           </p>
         )}
         {project.demoLink && (
-        <motion.a
+        <a
           href={project.demoLink}
           target="_blank" rel="noreferrer"
           className={`${styles.btn} ${styles.btnPrimary}`}
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.96 }}
         >
           {project.demoLabel ?? 'Ver Demo'}
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
             <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
           </svg>
-        </motion.a>
+        </a>
         )}
         {project.repoLink && (
-        <motion.a
+        <a
           href={project.repoLink}
           target="_blank" rel="noreferrer"
           className={`${styles.btn} ${styles.btnSecondary}`}
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.96 }}
         >
           Código
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
           </svg>
-        </motion.a>
+        </a>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 };
