@@ -144,6 +144,25 @@
   align-self: flex-start;
 }
 
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.client {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.client::before {
+  content: '·';
+  margin-right: 12px;
+  opacity: 0.5;
+}
+
 .title {
   font-size: 1.3rem;
   font-weight: 800;
@@ -219,6 +238,16 @@
   padding: 16px 26px 22px;
   border-top: 1px solid var(--border-color);
   margin-top: auto;
+}
+
+.privateNote {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
 .btn {

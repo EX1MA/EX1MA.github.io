@@ -9,6 +9,7 @@ interface ProjectCardProps { project: Project; }
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
   'Completado':    { label: '✓ Completado',   cls: styles.statusDone },
   'En Desarrollo': { label: '⚡ En Desarrollo', cls: styles.statusWip  },
+  'Mantenimiento': { label: '↻ En mantenimiento', cls: styles.statusWip },
   'Concepto':      { label: '✦ Concepto',      cls: styles.statusIdea },
 };
 
@@ -60,9 +61,12 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
 
       {/* ── Body ── */}
       <div className={styles.body}>
-        {project.category && (
-          <span className={styles.category}>{project.category}</span>
-        )}
+        <div className={styles.meta}>
+          {project.category && (
+            <span className={styles.category}>{project.category}</span>
+          )}
+          {project.client && <span className={styles.client}>{project.client}</span>}
+        </div>
 
         <h3 className={styles.title}>{project.title}</h3>
         <p  className={styles.desc}>{project.description}</p>
@@ -89,6 +93,15 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
 
       {/* ── Footer ── */}
       <div className={styles.footer}>
+        {!project.demoLink && !project.repoLink && (
+          <p className={styles.privateNote}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" />
+            </svg>
+            Proyecto para cliente · código privado
+          </p>
+        )}
+        {project.demoLink && (
         <motion.a
           href={project.demoLink}
           target="_blank" rel="noreferrer"
@@ -96,12 +109,14 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.96 }}
         >
-          Ver Demo
+          {project.demoLabel ?? 'Ver Demo'}
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
             <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
           </svg>
         </motion.a>
+        )}
+        {project.repoLink && (
         <motion.a
           href={project.repoLink}
           target="_blank" rel="noreferrer"
@@ -114,6 +129,7 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
             <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
           </svg>
         </motion.a>
+        )}
       </div>
     </motion.div>
   );

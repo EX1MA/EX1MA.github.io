@@ -5,6 +5,7 @@ import { HeroSection } from './components/HeroSection';
 import { AboutSection } from './components/AboutSection';
 import { SkillsSection } from './components/SkillsSection';
 import { ProjectsSection } from './components/ProjectsSection';
+import { ExperienceSection } from './components/ExperienceSection';
 import { ContactSection } from './components/ContactSection';
 import { Footer } from './components/Footer';
 import { ScrollProgress } from './components/ScrollProgress';
@@ -45,6 +46,7 @@ function App() {
           <AboutSection data={currentData.about} /> 
           <SkillsSection skillsList={currentData.skills} />
           <ProjectsSection projectsList={currentData.projects} />
+          <ExperienceSection />
           <ContactSection />
         </motion.main>
       </AnimatePresence>

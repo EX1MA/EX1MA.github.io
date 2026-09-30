@@ -5,6 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import s from './AboutSection.module.css';
 import profilePic from '../assets/profile.jpg';
 import type { Stat } from '../types';
+import { CV_URL } from './ExperienceSection';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -158,6 +159,10 @@ export const AboutSection = ({ data }: AboutSectionProps) => {
 
         <div ref={textRef} className={s.textWrap}>
           {data.text.map((p, i) => <p key={i} className={s.paragraph}>{p}</p>)}
+          <a href={CV_URL} download className={s.cvLink}>
+            Descargar CV (PDF)
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14" /></svg>
+          </a>
         </div>
       </div>
 
