@@ -29,7 +29,7 @@
 | Animación | GSAP (ScrollTrigger) y Framer Motion |
 | Estilos | CSS Modules con variables de diseño (`src/global.css`) |
 | Tipografía | Plus Jakarta Sans |
-| Formulario | FormSubmit |
+| Formulario | Web3Forms |
 | Hosting | GitHub Pages, desplegado con GitHub Actions |
 
 ## Desarrollo local
