@@ -19,11 +19,11 @@
   text-decoration: none;
   background: var(--primary-color);
   box-shadow: 0 10px 28px color-mix(in srgb, var(--primary-color) 35%, transparent);
-  transition: transform var(--transition), box-shadow var(--transition);
+  transition: translate var(--transition), box-shadow var(--transition);
 }
 
 .cvBtn:hover {
-  transform: translateY(-2px);
+  translate: 0 -2px; /* translate, no transform: GSAP usa transform */
   box-shadow: 0 14px 34px color-mix(in srgb, var(--primary-color) 45%, transparent);
 }
 

@@ -3,9 +3,10 @@ import { gsap, ScrollTrigger, useGSAP } from '../animations/gsap';
 import { useReveal } from '../animations/useReveal';
 import skillsStyles from './SkillsSection.module.css';
 import { prefersReducedMotion } from '../utils/motion';
-import type { Skill } from '../types';
+import type { Role, Skill } from '../types';
+import { designSkills, frontendSkills, softSkills, type SkillLevel } from '../data/skillGroups';
 
-interface SkillsSectionProps { skillsList: Skill[]; }
+interface SkillsSectionProps { skillsList: Skill[]; role: Role; }
 
 /* ── Infinite Marquee Row ──────────────────── */
 const MarqueeRow = ({ skills, reverse = false }: { skills: Skill[]; reverse?: boolean }) => {
@@ -74,10 +75,36 @@ const MarqueeRow = ({ skills, reverse = false }: { skills: Skill[]; reverse?: bo
   );
 };
 
+/* ── Tarjeta con barras de nivel ──────────── */
+const LevelCard = ({ title, icon, skills }: { title: string; icon: string; skills: SkillLevel[] }) => (
+  <div className={skillsStyles.groupCard} data-group>
+    <h3 className={skillsStyles.groupTitle}><span aria-hidden="true">{icon}</span> {title}</h3>
+    <ul className={skillsStyles.levels}>
+      {skills.map(sk => (
+        <li key={sk.name} className={skillsStyles.levelItem}>
+          <div className={skillsStyles.levelHead}>
+            <span className={skillsStyles.levelName}>
+              {sk.name}{sk.note && <em className={skillsStyles.levelNote}>{sk.note}</em>}
+            </span>
+            <span className={skillsStyles.levelValue} data-level={sk.level}>{sk.level}%</span>
+          </div>
+          <div
+            className={skillsStyles.levelTrack}
+            role="meter" aria-valuenow={sk.level} aria-valuemin={0} aria-valuemax={100} aria-label={sk.name}
+          >
+            <span className={skillsStyles.levelFill} data-fill style={{ width: `${sk.level}%` }} />
+          </div>
+        </li>
+      ))}
+    </ul>
+  </div>
+);
+
 /* ── Main Section ──────────────────────────── */
-export const SkillsSection = ({ skillsList }: SkillsSectionProps) => {
+export const SkillsSection = ({ skillsList, role }: SkillsSectionProps) => {
   const sectionRef = useRef<HTMLElement>(null);
   const rowsRef    = useRef<HTMLDivElement>(null);
+  const groupsRef  = useRef<HTMLDivElement>(null);
 
   useReveal(sectionRef, [skillsList]);
 
@@ -85,11 +112,38 @@ export const SkillsSection = ({ skillsList }: SkillsSectionProps) => {
   useGSAP(() => {
     if (!rowsRef.current || prefersReducedMotion()) return;
     gsap.from(gsap.utils.toArray('[data-chip]', rowsRef.current), {
-      autoAlpha: 0, y: 50, scale: 0.7, duration: 0.9, ease: 'back.out(1.8)',
+      autoAlpha: 0, y: 50, scale: 0.7, duration: 0.9, ease: 'back.out(1.8)', clearProps: 'transform,translate,rotate,scale',
       stagger: { each: 0.035, from: 'center' },
       scrollTrigger: { trigger: rowsRef.current, start: 'top 88%', once: true },
     });
   }, { scope: rowsRef, dependencies: [skillsList], revertOnUpdate: true });
+
+  // Tarjetas de nivel: entran en cascada, las barras se llenan y el % cuenta
+  useGSAP(() => {
+    const box = groupsRef.current;
+    if (!box || prefersReducedMotion()) return;
+    const cards = gsap.utils.toArray<HTMLElement>('[data-group]', box);
+    cards.forEach((card, i) => {
+      const tl = gsap.timeline({ scrollTrigger: { trigger: card, start: 'top 85%', once: true }, delay: i * 0.12 });
+      tl.from(card, { autoAlpha: 0, y: 60, duration: 0.9, ease: 'expo.out', clearProps: 'transform,translate,rotate,scale' })
+        .from(card.querySelectorAll('[data-fill]'), {
+          scaleX: 0, transformOrigin: '0% 50%', duration: 1.3, stagger: 0.08, ease: 'expo.out',
+        }, 0.25)
+        .from(card.querySelectorAll('[data-soft]'), {
+          autoAlpha: 0, scale: 0.6, y: 14, duration: 0.6, stagger: 0.05, ease: 'back.out(2)',
+        }, 0.3);
+      card.querySelectorAll<HTMLElement>('[data-level]').forEach((el, j) => {
+        const target = Number(el.dataset.level), obj = { v: 0 };
+        tl.to(obj, { v: target, duration: 1.3, ease: 'expo.out', onUpdate: () => { el.textContent = `${Math.round(obj.v)}%`; } }, 0.25 + j * 0.08);
+      });
+    });
+  }, { scope: groupsRef, dependencies: [role], revertOnUpdate: true });
+
+  const groups = [
+    <LevelCard key="dev" title="Desarrollo Frontend" icon="</>" skills={frontendSkills} />,
+    <LevelCard key="design" title="Diseño & Creatividad" icon="✦" skills={designSkills} />,
+  ];
+  if (role === 'designer') groups.reverse();
 
   // Split skills into two rows for dual marquee
   const half    = Math.ceil(skillsList.length / 2);
@@ -113,6 +167,23 @@ export const SkillsSection = ({ skillsList }: SkillsSectionProps) => {
       <div ref={rowsRef} className={skillsStyles.marqueesContainer}>
         <MarqueeRow skills={row1} reverse={false} />
         <MarqueeRow skills={row2} reverse={true}  />
+      </div>
+
+      {/* Detalle por área, con los niveles del CV */}
+      <div ref={groupsRef} className={`section-container ${skillsStyles.groups}`}>
+        {groups}
+        <div className={skillsStyles.groupCard} data-group>
+          <h3 className={skillsStyles.groupTitle}><span aria-hidden="true">◎</span> Habilidades Blandas</h3>
+          <ul className={skillsStyles.softList}>
+            {softSkills.map(sk => <li key={sk} data-soft className={skillsStyles.softChip}>{sk}</li>)}
+          </ul>
+          <div className={skillsStyles.learning}>
+            <span className={skillsStyles.learningDot} aria-hidden="true" />
+            <p>
+              <strong>Aprendiendo ahora:</strong> arquitectura cloud con AWS.
+            </p>
+          </div>
+        </div>
       </div>
     </section>
   );
