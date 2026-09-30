@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import heroStyles from './HeroSection.module.css';
+import { prefersReducedMotion } from '../utils/motion';
 
 interface HeroData {
   title: string;
@@ -57,7 +58,7 @@ export const HeroSection = ({ data }: HeroSectionProps) => {
 
   /* Floating shapes (persistent) */
   useEffect(() => {
-    if (!shapesRef.current) return;
+    if (!shapesRef.current || prefersReducedMotion()) return;
     const els = gsap.utils.toArray<HTMLElement>(shapesRef.current.children);
     const tw = els.map((el, i) =>
       gsap.to(el, {
@@ -74,7 +75,7 @@ export const HeroSection = ({ data }: HeroSectionProps) => {
 
   /* Entrance timeline (re-runs on role switch via remount) */
   useEffect(() => {
-    if (!data) return;
+    if (!data || prefersReducedMotion()) return;
     if (tlRef.current) tlRef.current.kill();
 
     // Get word spans inside the h1
@@ -136,9 +137,9 @@ export const HeroSection = ({ data }: HeroSectionProps) => {
         </p>
 
         {/* Word-by-word reveal */}
-        <h1 ref={titleRef} className={heroStyles.title}>
+        <h1 ref={titleRef} className={heroStyles.title} aria-label={data.title}>
           {titleWords.map((word, i) => (
-            <span key={i} className={heroStyles.wordWrapper}>
+            <span key={i} className={heroStyles.wordWrapper} aria-hidden="true">
               <span data-word className={heroStyles.word}>{word}</span>
             </span>
           ))}

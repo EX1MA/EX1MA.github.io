@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import styles from './CustomCursor.module.css';
+import { prefersReducedMotion } from '../utils/motion';
 
 export const CustomCursor = () => {
   const dotRef  = useRef<HTMLDivElement>(null);
@@ -10,6 +11,8 @@ export const CustomCursor = () => {
     const dot  = dotRef.current;
     const ring = ringRef.current;
     if (!dot || !ring) return;
+    // En pantallas táctiles o con movimiento reducido se usa el cursor normal
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches || prefersReducedMotion()) return;
 
     // Center elements on mouse using GSAP percentages
     gsap.set([dot, ring], { xPercent: -50, yPercent: -50 });
@@ -20,7 +23,10 @@ export const CustomCursor = () => {
     const xRing = gsap.quickTo(ring, 'x', { duration: 0.38, ease: 'power2' });
     const yRing = gsap.quickTo(ring, 'y', { duration: 0.38, ease: 'power2' });
 
+    let shown = false;
     const onMove = (e: MouseEvent) => {
+      // Se muestran hasta el primer movimiento para no quedar fijos en la esquina
+      if (!shown) { gsap.set([dot, ring], { visibility: 'visible' }); shown = true; }
       xDot(e.clientX);
       yDot(e.clientY);
       xRing(e.clientX);

@@ -115,7 +115,7 @@ export const ContactSection = () => {
               name="message" rows={5} required
               className={s.textarea}
               placeholder="Cuéntame tu proyecto..."
-              onFocus={onFocus as any} onBlur={onBlur as any}
+              onFocus={onFocus} onBlur={onBlur}
             />
           </motion.div>
 

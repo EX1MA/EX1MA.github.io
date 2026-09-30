@@ -4,6 +4,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ProjectCard } from './ProjectCard';
 import s from './ProjectsSection.module.css';
+import { prefersReducedMotion } from '../utils/motion';
 import type { Project } from '../types';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -20,9 +21,11 @@ export const ProjectsSection = ({ projectsList }: ProjectsSectionProps) => {
     const section = sectionRef.current;
     const track   = trackRef.current;
     if (!section || !track) return;
+    const reduced = prefersReducedMotion();
 
     const isMobile = window.innerWidth < 900;
     if (isMobile) {
+      if (reduced) return;
       // Mobile: simple stagger reveal, no horizontal scroll
       const ctx = gsap.context(() => {
         gsap.fromTo(
@@ -55,21 +58,25 @@ export const ProjectsSection = ({ projectsList }: ProjectsSectionProps) => {
         },
       });
 
-      // Reveal each card as it enters the horizontal viewport
-      Array.from(track.children).forEach((card) => {
+      if (reduced) return;
+
+      // Reveal each card as it enters the horizontal viewport.
+      // Las que ya caben en pantalla se revelan al llegar a la sección,
+      // para que no se vea vacía antes de que empiece el scroll horizontal.
+      Array.from(track.children).forEach((card, i) => {
+        const el = card as HTMLElement;
+        const visibleAtStart = el.offsetLeft < section.clientWidth * 0.85;
         gsap.fromTo(
-          card,
+          el,
           { opacity: 0, scale: 0.88, y: 30 },
           {
             opacity: 1, scale: 1, y: 0,
             duration: 0.75,
+            delay: visibleAtStart ? i * 0.12 : 0,
             ease: 'power3.out',
-            scrollTrigger: {
-              trigger: card as HTMLElement,
-              containerAnimation: tween,
-              start: 'left 85%',
-              once: true,
-            },
+            scrollTrigger: visibleAtStart
+              ? { trigger: section, start: 'top 70%', once: true }
+              : { trigger: el, containerAnimation: tween, start: 'left 85%', once: true },
           }
         );
       });

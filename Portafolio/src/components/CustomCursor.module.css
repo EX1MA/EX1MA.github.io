@@ -9,6 +9,7 @@
   pointer-events: none;
   z-index: 99999;
   mix-blend-mode: normal;
+  visibility: hidden;
 }
 
 .ring {
@@ -22,6 +23,7 @@
   pointer-events: none;
   z-index: 99998;
   opacity: 0.75;
+  visibility: hidden;
 }
 
 /* Hide on touch devices */

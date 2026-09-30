@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -8,6 +8,13 @@ import type { Stat } from '../types';
 
 gsap.registerPlugin(ScrollTrigger);
 
+// Foto real para el reverso de la tarjeta: basta con guardar
+// src/assets/photo.jpg (o .png / .webp) y se usa automáticamente.
+const photos = import.meta.glob<string>('../assets/photo.{jpg,jpeg,png,webp}', {
+  eager: true, import: 'default',
+});
+const realPhoto = Object.values(photos)[0];
+
 interface AboutData { text: string[]; stats?: Stat[]; }
 interface AboutSectionProps { data?: AboutData; }
 
@@ -16,6 +23,8 @@ export const AboutSection = ({ data }: AboutSectionProps) => {
   const imageRef    = useRef<HTMLDivElement>(null);
   const textRef     = useRef<HTMLDivElement>(null);
   const statsRef    = useRef<HTMLDivElement>(null);
+
+  const [flipped, setFlipped] = useState(false);
 
   const headerRef = useRef<HTMLDivElement>(null);
   const isInView  = useInView(headerRef, { once: true, amount: 0.4 });
@@ -114,7 +123,35 @@ export const AboutSection = ({ data }: AboutSectionProps) => {
       {/* Profile + Text */}
       <div className={s.grid}>
         <div ref={imageRef} className={s.imageWrap}>
-          <img src={profilePic} alt="Joel Contreras" className={s.profileImg} />
+          <button
+            type="button"
+            className={`${s.flipCard} ${flipped ? s.flipped : ''}`}
+            onClick={() => setFlipped(f => !f)}
+            aria-pressed={flipped}
+            aria-label={flipped ? 'Mostrar ilustración' : 'Mostrar foto'}
+          >
+            <span className={s.flipInner}>
+              <span className={`${s.face} ${s.front}`}>
+                <img src={profilePic} alt="Ilustración de Joel Contreras" className={s.profileImg} />
+              </span>
+              <span className={`${s.face} ${s.back}`}>
+                {realPhoto ? (
+                  <img src={realPhoto} alt="Foto de Joel Contreras" className={s.profileImg} />
+                ) : (
+                  <span className={s.monogram} aria-hidden="true">
+                    <span className={s.monogramInitials}>JC</span>
+                    <span className={s.monogramName}>Joel Contreras</span>
+                  </span>
+                )}
+              </span>
+            </span>
+            <span className={s.flipHint} aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12a9 9 0 1 1-3-6.7L21 8" /><path d="M21 3v5h-5" />
+              </svg>
+              {flipped ? 'Volver' : 'Gírame'}
+            </span>
+          </button>
           <div className={s.imageBorder} />
           <div className={s.imageDecor} />
         </div>
