@@ -10,6 +10,7 @@ import { Footer } from './components/Footer';
 import { ScrollProgress } from './components/ScrollProgress';
 import { CustomCursor } from './components/CustomCursor';
 import { ScrollToTop } from './components/ScrollToTop';
+import { FoxGuide } from './components/FoxGuide/FoxGuide';
 
 import { gsap, ScrollTrigger, SplitText } from './animations/gsap';
 import { prefersReducedMotion } from './utils/motion';
@@ -83,6 +84,7 @@ function App() {
 
       <Footer />
       <ScrollToTop />
+      <FoxGuide role={role} />
 
       <div ref={overlayRef} className={appStyles.roleOverlay} aria-hidden="true">
         <div data-layer className={appStyles.roleLayer} />

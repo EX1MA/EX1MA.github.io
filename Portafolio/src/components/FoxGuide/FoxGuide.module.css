@@ -1,0 +1,14 @@
+/* Escenario del zorro: franja fija en la parte baja, transparente y sin capturar clics.
+   Va debajo del menú móvil (998) y del botón para subir (999). */
+.stage {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  z-index: 990;
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+
+@media print {
+  .stage { display: none; }
+}
