@@ -132,17 +132,19 @@ export function FoxGuide({ role }: { role: Role }) {
     engine.setRole(role);
     const triggers: ScrollTrigger[] = [];
     const scenes = new Map<ScrollTrigger, Scene>();
+    const selectors = new Map<ScrollTrigger, string>();
+    let activeSelector = '';
     // si dos secciones están activas a la vez (Contacto y footer), manda la de más abajo
     const pick = () => {
       const active = triggers.filter(t => t.isActive);
       const last = active.sort((a, b) => a.start - b.start).pop();
-      if (last) engine.setScene(scenes.get(last)!);
+      if (last) { engine.setScene(scenes.get(last)!); activeSelector = selectors.get(last) ?? ''; }
     };
     // Trayectoria: el zorro se sienta a la derecha de la línea y olfatea el punto que pasa a su altura
     const followTrail = (section: Element) => {
       const dots = section.querySelectorAll('[data-dot]');
       if (!dots.length) return;
-      const stageH = canvasRef.current?.getBoundingClientRect().height ?? 192;
+      const stageH = engine.footprintCss;
       const top = window.innerHeight - stageH * 0.85, bottom = window.innerHeight - 10;
       let near = false;
       dots.forEach(d => {
@@ -169,14 +171,78 @@ export function FoxGuide({ role }: { role: Role }) {
           },
         });
         scenes.set(st, scene);
+        selectors.set(st, selector);
         triggers.push(st);
       }
       ScrollTrigger.refresh();
       pick();
     });
+    // ── Acrobacia en el Hero: brinca sobre las letras del nombre y cada una rebota al pisarla ──
+    const chars = () => Array.from(document.querySelectorAll<HTMLElement>('#hero [data-char]'));
+    const canAct = () => activeSelector === '#hero' && window.scrollY < 30 && window.innerWidth >= 900 && engine.idle;
+    let nextAct = performance.now() + 5500;   // la primera vez, poco después de llegar al Hero
+    const act = () => {
+      const list = chars();
+      if (!list.length || !canAct() || performance.now() < nextAct) return;
+      const s = engine.cssScale;
+      // de derecha a izquierda (empieza por la letra más cercana al zorro), una sí y una no
+      const picked = list.filter((_, i) => i % 2 === 0 || i === list.length - 1).reverse();
+      const pts = picked.map(el => {
+        const r = el.getBoundingClientRect();
+        // las mayúsculas y letras altas tienen la parte de arriba más alta que las minúsculas
+        const tall = /[A-ZÁÉÍÓÚÑbdfhklt]/.test(el.textContent ?? '');
+        return { x: (r.left + r.width / 2) / s, y: (r.top + r.height * (tall ? 0.2 : 0.42)) / s };
+      });
+      if (engine.perform(pts, i => bounce(picked[i]))) nextAct = performance.now() + 12000;
+    };
+    const bounce = (el: HTMLElement) => gsap.timeline()
+      .to(el, { y: 6, scaleY: 0.82, transformOrigin: '50% 100%', duration: 0.08, ease: 'power2.out' })
+      .to(el, { y: -5, scaleY: 1.06, duration: 0.14, ease: 'power2.out' })
+      .to(el, { y: 0, scaleY: 1, duration: 0.35, ease: 'elastic.out(1, 0.45)' });
+    const timer = window.setInterval(act, 1000);
+    // pasar el cursor por el nombre lo invita a repetir (con pausa de 12 s entre acrobacias)
+    const title = document.querySelector('#hero h1');
+    title?.addEventListener('pointerenter', act);
+    // ── Habilidades: cabezazo a los chips (al pasar el cursor y, de vez en cuando, solo) ──
+    let nextBop = performance.now() + 3000;
+    const bop = (chip?: HTMLElement) => {
+      if (activeSelector !== '#skills' || window.innerWidth < 900 || !engine.idle || performance.now() < nextBop) return;
+      const s = engine.cssScale;
+      const reachable = (el: HTMLElement) => {
+        const r = el.getBoundingClientRect();
+        return r.right > 0 && r.left < window.innerWidth && r.bottom > window.innerHeight - 460 && r.bottom < window.innerHeight - 140;
+      };
+      if (!chip) {
+        const all = Array.from(document.querySelectorAll<HTMLElement>('#skills [data-chip]')).filter(reachable);
+        chip = all[Math.floor(Math.random() * all.length)];
+      }
+      if (!chip || !reachable(chip)) return;
+      const r = chip.getBoundingClientRect();
+      // salta para que la cabeza toque la parte de abajo del chip
+      const pt = { x: (r.left + r.width / 2) / s, y: r.bottom / s + 34, air: true };
+      const target = chip;
+      if (engine.perform([pt], () => gsap.timeline()
+        .to(target, { y: -16, rotation: gsap.utils.random(-10, 10), duration: 0.16, ease: 'power2.out' })
+        .to(target, { y: 0, rotation: 0, duration: 0.7, ease: 'elastic.out(1, 0.4)' }))) nextBop = performance.now() + 4000;
+    };
+    const onChipOver = (e: PointerEvent) => {
+      const chip = e.target instanceof Element ? e.target.closest<HTMLElement>('#skills [data-chip]') : null;
+      if (chip) bop(chip);
+    };
+    document.addEventListener('pointerover', onChipOver);
+    const bopTimer = window.setInterval(() => { if (Math.random() < 0.35) bop(); }, 3000);
+
+    const onScroll = () => { if (activeSelector === '#hero' && window.scrollY > 40) engine.abortPerform(); };
+    window.addEventListener('scroll', onScroll, { passive: true });
+
     return () => {
       cancelAnimationFrame(id);
       triggers.forEach(t => t.kill());
+      window.clearInterval(timer);
+      window.clearInterval(bopTimer);
+      document.removeEventListener('pointerover', onChipOver);
+      title?.removeEventListener('pointerenter', act);
+      window.removeEventListener('scroll', onScroll);
     };
   }, [role]);
 
