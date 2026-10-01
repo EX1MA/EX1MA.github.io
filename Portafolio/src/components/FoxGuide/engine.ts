@@ -11,7 +11,7 @@ export interface SheetMeta {
 }
 
 /** Lo que hace el zorro al llegar a su lugar en cada sección */
-export type Pose = 'sit' | 'think' | 'look_up' | 'sniff' | 'projects' | 'howl' | 'sleep';
+export type Pose = 'sit' | 'think' | 'look_up' | 'sniff' | 'projects' | 'trail' | 'howl' | 'sleep';
 export type Facing = 'left' | 'right' | 'pointer';
 
 export interface Scene {
@@ -19,6 +19,8 @@ export interface Scene {
   x: number;
   pose: Pose;
   face: Facing;
+  /** caza el cursor (solo donde no estorba: Hero y Contacto) */
+  hunt?: boolean;
 }
 
 interface Particle {
@@ -34,6 +36,7 @@ const GLYPH = {
   dot:   ['11', '11'],
   heart: ['01010', '11111', '11111', '01110', '00100'],
   ask:   ['01110', '10001', '00001', '00010', '00100', '00000', '00100'],
+  bang:  ['1', '1', '1', '0', '1'],
 };
 
 // Datos de cada pose sentada dentro de la celda de 56x40: ojos, puntas de orejas [x0, x1, y0, y1],
@@ -57,7 +60,7 @@ const WALK_SPEED = 34;       // px nativos por segundo
 const RUN_SPEED = 88;
 const RUN_DISTANCE = 70;     // más lejos que esto, corre en vez de caminar
 const MOBILE_X = 34;         // en pantallas angostas se queda en la esquina inferior izquierda
-const SEATED: Pose[] = ['sit', 'think', 'look_up', 'howl', 'sleep', 'projects'];
+const SEATED: Pose[] = ['sit', 'think', 'look_up', 'howl', 'sleep', 'projects', 'trail'];
 
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 
@@ -105,6 +108,10 @@ export class FoxEngine {
   private sprintUntil = 0;    // botón de subir
   private watchUntil = 0;     // contadores de Sobre mí
   private sleepy = false;     // inactividad
+  private looking = false;    // cursor sobre una tarjeta de proyecto
+  private trailNear = false;  // un punto de la Trayectoria pasa a su altura
+  private bangUntil = 0;
+  private fetch: { phase: 'out' | 'away' | 'back' | 'hold' | 'drop'; until: number } | null = null;
   private scrollSpeed = 0;
   private scrollAt = -10;
   private lastFrame = -1;
@@ -223,6 +230,24 @@ export class FoxEngine {
     this.react();
   }
 
+  /** Cursor sobre una tarjeta de proyecto: voltea a verla */
+  setLooking(looking: boolean) {
+    this.looking = looking;
+  }
+
+  /** Un punto de la línea de tiempo llega a su altura: lo olfatea */
+  setTrailNear(near: boolean) {
+    if (near && !this.trailNear) this.bangUntil = this.t + 0.6;
+    this.trailNear = near;
+  }
+
+  /** Descargar CV: sale corriendo y regresa con el papel en la boca */
+  fetchCV() {
+    if (this.reduced || this.fetch || !this.scene) return;
+    this.sleepy = false;
+    this.fetch = { phase: 'out', until: 0 };
+  }
+
   /** Sin actividad: se duerme donde esté; al volver, se sacude */
   setIdle(idle: boolean) {
     if (idle === this.sleepy) return;
@@ -267,6 +292,7 @@ export class FoxEngine {
     if (this.t < 0.9) return;   // espera a que termine la entrada del Hero
     if (this.t < this.sprintUntil) { this.updateSprint(); this.stepParticles(dt); return; }
     if (this.sprintUntil && this.t >= this.sprintUntil) { this.sprintUntil = 0; this.mode = 'move'; }
+    if (this.fetch) { this.updateFetch(dt); this.stepParticles(dt); return; }
 
     switch (this.mode) {
       case 'move':   this.updateMove(dt); break;
@@ -406,7 +432,7 @@ export class FoxEngine {
     }
 
     // cazar el cursor: si se queda quieto cerca, se agacha, menea la cola y salta
-    if (scene.face === 'pointer' && !this.petting && this.canPounce()) {
+    if (scene.hunt && !this.petting && this.canPounce()) {
       this.mode = 'stalk';
       this.stalkUntil = this.t + 0.9;
       this.left = this.pointerX! < this.x;
@@ -454,6 +480,29 @@ export class FoxEngine {
           this.lastFrame = f;
           this.drawShadow(30);
           this.drawFox('run', f, [0, -2, -1, -2, 0][f]);
+        } else if (this.looking) {
+          // mira hacia la tarjeta que está bajo el cursor
+          if (this.pointerX !== undefined) this.left = this.pointerX < this.x;
+          this.drawShadow(22);
+          this.drawFx('look_up', this.frameAt('look_up', tailSpeed), g);
+        } else {
+          this.drawShadow(22);
+          this.drawFx('sit', this.frameAt('sit', tailSpeed), g);
+        }
+        break;
+      }
+      case 'trail': {
+        // junto a la línea de tiempo: olfatea cada punto que pasa y si no, espera sentado
+        if (this.t < this.bangUntil) this.glyph('bang', this.x + (this.left ? -18 : 16), this.ground - 44, this.primary);
+        if (this.trailNear) {
+          const f = this.frameAt('sniff');
+          if (f !== this.lastFrame && f !== 0) {
+            const dir = this.left ? 1 : -1;
+            for (let i = 0; i < 2; i++) this.particles.push({ x: this.x + (this.left ? -8 : 8), y: this.ground - 2, vx: dir * rnd(16, 30), vy: rnd(-30, -16), g: 120, life: 0.5, color: '#8e6151', size: 1 });
+          }
+          this.lastFrame = f;
+          this.drawShadow(32);
+          this.drawFox('sniff', f);
         } else {
           this.drawShadow(22);
           this.drawFx('sit', this.frameAt('sit', tailSpeed), g);
@@ -483,6 +532,68 @@ export class FoxEngine {
     }
     this.drawShadow(30);
     this.drawFox('run', f, [0, -2, -1, -2, 0][f]);
+  }
+
+  /** Corre hacia tx; devuelve true al llegar. Con `carry` lleva el papel en la boca */
+  private runTo(tx: number, dt: number, carry: boolean) {
+    const dx = tx - this.x;
+    if (Math.abs(dx) < 1.5) { this.x = tx; return true; }
+    this.left = dx < 0;
+    this.x += Math.sign(dx) * Math.min(Math.abs(dx), RUN_SPEED * 1.25 * dt);
+    const f = this.frameAt('run', 1.25);
+    const bob = [0, -2, -1, -2, 0][f];
+    if (f !== this.lastFrame && (f === 0 || f === 3)) this.dustPuff(3, 22);
+    this.lastFrame = f;
+    this.drawShadow(30);
+    this.drawFox('run', f, bob);
+    if (carry) this.drawPaper(this.x + (this.left ? -18 : 14), this.ground - 26 + bob);
+    return false;
+  }
+
+  private updateFetch(dt: number) {
+    const fe = this.fetch!;
+    switch (fe.phase) {
+      case 'out':   // sale por el borde más cercano
+        if (this.runTo(this.x < this.width / 2 ? -40 : this.width + 40, dt, false)) { fe.phase = 'away'; fe.until = this.t + 0.5; }
+        break;
+      case 'away':
+        if (this.t >= fe.until) fe.phase = 'back';
+        break;
+      case 'back':
+        if (this.runTo(this.targetX, dt, true)) { fe.phase = 'hold'; fe.until = this.t + 1.6; }
+        break;
+      case 'hold': {   // sentado, orgulloso, con el papel en la boca
+        this.left = this.scene?.face === 'left';
+        this.drawShadow(22);
+        this.drawFx('sit', this.frameAt('sit', 2), this.gestures());
+        this.drawPaper(this.x + (this.left ? -16 : 12), this.ground - 22);
+        if (this.t >= fe.until) {
+          fe.phase = 'drop';
+          this.particles.push({ x: this.x + (this.left ? -16 : 12), y: this.ground - 22, vx: this.left ? -8 : 8, vy: -14, g: 90, life: 0.55, color: '#fff7ef', size: 3 });
+          this.particles.push({ x: this.x + (this.left ? -10 : 6), y: this.ground - 40, vx: 0, vy: -10, g: 0, life: 1, color: this.primary, size: 1, glyph: 'heart' });
+        }
+        break;
+      }
+      case 'drop':
+        this.fetch = null;
+        this.mode = 'pose';
+        this.updatePose();
+        break;
+    }
+  }
+
+  /** Hoja de CV de 5x6 con renglones */
+  private drawPaper(x: number, y: number) {
+    const ctx = this.ctx, X = Math.round(x), Y = Math.round(y);
+    ctx.fillStyle = '#5a2a1c';
+    ctx.fillRect(X - 1, Y - 1, 7, 8);
+    ctx.fillStyle = '#fff7ef';
+    ctx.fillRect(X, Y, 5, 6);
+    ctx.fillStyle = this.primary;
+    ctx.fillRect(X + 1, Y + 1, 3, 1);
+    ctx.fillStyle = '#9a8f86';
+    ctx.fillRect(X + 1, Y + 3, 3, 1);
+    ctx.fillRect(X + 1, Y + 4, 2, 1);
   }
 
   private canPounce() {
