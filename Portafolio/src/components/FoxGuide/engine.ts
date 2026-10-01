@@ -24,6 +24,7 @@ export interface Scene {
 interface Particle {
   x: number; y: number; vx: number; vy: number; g: number;
   life: number; color: string; size: number; glyph?: keyof typeof GLYPH;
+  w?: number;   // ancho, para las líneas de velocidad
 }
 
 const GLYPH = {
@@ -55,6 +56,7 @@ const STAGE_H = 64;          // alto del escenario en píxeles nativos
 const WALK_SPEED = 34;       // px nativos por segundo
 const RUN_SPEED = 88;
 const RUN_DISTANCE = 70;     // más lejos que esto, corre en vez de caminar
+const MOBILE_X = 34;         // en pantallas angostas se queda en la esquina inferior izquierda
 const SEATED: Pose[] = ['sit', 'think', 'look_up', 'howl', 'sleep', 'projects'];
 
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
@@ -69,6 +71,7 @@ export class FoxEngine {
   private reduced: boolean;
 
   private scale = 3;
+  private mobile = false;
   private width = 0;          // ancho nativo
   private ground = STAGE_H - 3;
   private t = 0;
@@ -99,6 +102,9 @@ export class FoxEngine {
   private napUntil = 0;       // tema oscuro
   private shakeUntil = 0;     // tema claro
   private petting = false;
+  private sprintUntil = 0;    // botón de subir
+  private watchUntil = 0;     // contadores de Sobre mí
+  private sleepy = false;     // inactividad
   private scrollSpeed = 0;
   private scrollAt = -10;
   private lastFrame = -1;
@@ -127,15 +133,26 @@ export class FoxEngine {
 
   // ───────────────────────── API ─────────────────────────
   resize() {
-    this.scale = window.innerWidth >= 900 ? 3 : 2;
+    this.mobile = window.innerWidth < 900;
+    if (this.mobile) {
+      // más pequeño en celular, pero con un número entero de píxeles físicos por píxel del sprite
+      const dpr = window.devicePixelRatio || 1;
+      this.scale = Math.max(2, Math.round(1.5 * dpr)) / dpr;
+    } else {
+      this.scale = 3;
+    }
     this.width = Math.ceil(window.innerWidth / this.scale);
     this.canvas.width = this.width;
     this.canvas.height = STAGE_H;
     this.canvas.style.width = `${this.width * this.scale}px`;
     this.canvas.style.height = `${STAGE_H * this.scale}px`;
     this.ctx.imageSmoothingEnabled = false;
-    // entra corriendo desde el borde derecho, más cerca de su lugar en Hero
-    if (!this.placed) { this.x = this.width + 40; this.left = true; this.placed = true; }
+    // entra corriendo desde el borde más cercano a su lugar (derecha en escritorio, izquierda en celular)
+    if (!this.placed) {
+      this.x = this.mobile ? -40 : this.width + 40;
+      this.left = !this.mobile;
+      this.placed = true;
+    }
     if (this.scene) this.targetX = this.fracToX(this.scene.x);
     if (this.reduced && this.scene) this.x = this.targetX;
   }
@@ -188,6 +205,31 @@ export class FoxEngine {
     this.confusedUntil = this.t + 1.8;
   }
 
+  /** Botón de subir: sprint en su lugar mientras la página sube */
+  sprint() {
+    if (this.reduced) return;
+    this.sprintUntil = this.t + 1.4;
+    this.sleepy = false;
+  }
+
+  /** Contadores de Sobre mí: los mira subir y brinca al terminar */
+  countStart() {
+    if (this.scene?.pose === 'think') this.watchUntil = this.t + 2.6;
+  }
+
+  countEnd() {
+    if (this.t >= this.watchUntil) return;
+    this.watchUntil = 0;
+    this.react();
+  }
+
+  /** Sin actividad: se duerme donde esté; al volver, se sacude */
+  setIdle(idle: boolean) {
+    if (idle === this.sleepy) return;
+    this.sleepy = idle;
+    if (!idle && !this.reduced) this.shakeUntil = this.t + 0.7;
+  }
+
   /** Cambio de tema: en oscuro toma una siesta, en claro se despierta y se sacude */
   themeChanged(dark: boolean) {
     if (this.reduced) return;
@@ -223,6 +265,8 @@ export class FoxEngine {
 
     if (this.reduced) { this.drawStatic(); return; }
     if (this.t < 0.9) return;   // espera a que termine la entrada del Hero
+    if (this.t < this.sprintUntil) { this.updateSprint(); this.stepParticles(dt); return; }
+    if (this.sprintUntil && this.t >= this.sprintUntil) { this.sprintUntil = 0; this.mode = 'move'; }
 
     switch (this.mode) {
       case 'move':   this.updateMove(dt); break;
@@ -311,8 +355,8 @@ export class FoxEngine {
       return;
     }
 
-    // tema oscuro: siesta corta; tema claro: se sacude
-    if (this.t < this.napUntil) {
+    // tema oscuro o inactividad: duerme; tema claro o al volver: se sacude
+    if (this.t < this.napUntil || this.sleepy) {
       this.emit(0.8, () => ({ x: this.x + (this.left ? -14 : 12), y: this.ground - 20, vx: this.left ? -5 : 5, vy: -7, g: 0, life: 1.8, size: 1, glyph: 'z', color: this.ink }));
       this.drawShadow(30);
       this.drawFox('sleep', this.frameAt('sleep'));
@@ -322,6 +366,15 @@ export class FoxEngine {
       if (Math.random() < 0.3) this.dustPuff(1, 14, true);
       this.drawShadow(30);
       this.drawFox('shake', this.frameAt('shake'));
+      return;
+    }
+
+    // mira subir los contadores de Sobre mí
+    if (this.t < this.watchUntil) {
+      this.left = false;
+      this.emit(0.45, () => ({ x: this.x + rnd(0, 24), y: rnd(2, 12), vx: 0, vy: -2, g: 0, life: 0.9, size: 1, glyph: 'star', color: this.accent }));
+      this.drawShadow(22);
+      this.drawFx('look_up', this.frameAt('look_up'), this.gestures());
       return;
     }
 
@@ -419,6 +472,19 @@ export class FoxEngine {
     }
   }
 
+  private updateSprint() {
+    // corre muy rápido en su lugar con polvo y líneas de velocidad detrás
+    this.left = false;
+    const f = Math.floor(this.t * 20) % 5;
+    if (f !== this.lastFrame) {
+      this.lastFrame = f;
+      if (f === 0 || f === 3) this.dustPuff(3, 30);
+      this.particles.push({ x: this.x - 28 - rnd(0, 10), y: this.ground - rnd(10, 30), vx: -70, vy: 0, g: 0, life: 0.25, color: this.primary, size: 1, w: Math.round(rnd(4, 8)) });
+    }
+    this.drawShadow(30);
+    this.drawFox('run', f, [0, -2, -1, -2, 0][f]);
+  }
+
   private canPounce() {
     if (this.pointerX === undefined || this.t < this.nextPounce || this.t < this.excitedUntil + 2) return false;
     const dx = Math.abs(this.pointerX - this.x);
@@ -449,14 +515,14 @@ export class FoxEngine {
 
   private drawStatic() {
     // movimiento reducido: sentado y quieto (dormido en el footer), sin partículas ni ciclos
-    const sleep = this.scene!.pose === 'sleep';
+    const sleep = this.scene!.pose === 'sleep' || this.sleepy;
     this.drawShadow(22);
     this.drawFox(sleep ? 'sleep' : 'sit', 0);
   }
 
   // ───────────────────────── dibujo ─────────────────────────
   private fracToX(frac: number) {
-    return Math.round(frac * this.width);
+    return this.mobile ? MOBILE_X : Math.round(frac * this.width);
   }
 
   private frameAt(anim: string, speed = 1) {
@@ -592,7 +658,7 @@ export class FoxEngine {
       if (p.life <= 0) { this.particles.splice(i, 1); continue; }
       p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt;
       if (p.glyph) this.glyph(p.glyph, p.x, p.y, p.color);
-      else { ctx.fillStyle = p.color; ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size); }
+      else { ctx.fillStyle = p.color; ctx.fillRect(Math.round(p.x), Math.round(p.y), p.w ?? p.size, p.size); }
     }
   }
 

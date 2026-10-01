@@ -23,7 +23,8 @@ const SCENES: { selector: string; scene: Scene; walk?: [number, number]; start?:
 /**
  * Zorro en pixel art que acompaña el recorrido: camina a su lugar en cada sección,
  * sigue el cursor en Hero y Contacto, y celebra cuando se envía el formulario.
- * Eventos globales: `fox:celebrate` (formulario enviado) y `fox:react` (tarjeta girada).
+ * Eventos globales: `fox:celebrate` (formulario enviado), `fox:react` (tarjeta girada),
+ * `fox:sprint` (botón de subir) y `fox:count-start` / `fox:count-end` (contadores de Sobre mí).
  */
 export function FoxGuide({ role }: { role: Role }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -72,11 +73,28 @@ export function FoxGuide({ role }: { role: Role }) {
     const onLeave = () => engine.setPointer(undefined);
     const onCelebrate = () => engine.celebrate();
     const onReact = () => engine.react();
+    const onSprint = () => engine.sprint();
+    const onCountStart = () => engine.countStart();
+    const onCountEnd = () => engine.countEnd();
+
+    // inactividad: tras 30 s sin moverse, el zorro se duerme
+    let idleTimer = 0;
+    const onActivity = () => {
+      engine.setIdle(false);
+      window.clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(() => engine.setIdle(true), 30_000);
+    };
+    onActivity();
+    const ACTIVITY = ['pointermove', 'pointerdown', 'keydown', 'scroll', 'wheel', 'touchstart'] as const;
+    ACTIVITY.forEach(ev => window.addEventListener(ev, onActivity, { passive: true }));
     window.addEventListener('resize', onResize);
     window.addEventListener('pointermove', onMove, { passive: true });
     document.documentElement.addEventListener('pointerleave', onLeave);
     window.addEventListener('fox:celebrate', onCelebrate);
     window.addEventListener('fox:react', onReact);
+    window.addEventListener('fox:sprint', onSprint);
+    window.addEventListener('fox:count-start', onCountStart);
+    window.addEventListener('fox:count-end', onCountEnd);
     document.addEventListener('input', onInput);
     document.addEventListener('focusout', onFocusOut);
 
@@ -88,6 +106,11 @@ export function FoxGuide({ role }: { role: Role }) {
       document.documentElement.removeEventListener('pointerleave', onLeave);
       window.removeEventListener('fox:celebrate', onCelebrate);
       window.removeEventListener('fox:react', onReact);
+      window.removeEventListener('fox:sprint', onSprint);
+      window.removeEventListener('fox:count-start', onCountStart);
+      window.removeEventListener('fox:count-end', onCountEnd);
+      ACTIVITY.forEach(ev => window.removeEventListener(ev, onActivity));
+      window.clearTimeout(idleTimer);
       document.removeEventListener('input', onInput);
       document.removeEventListener('focusout', onFocusOut);
       engineRef.current = null;

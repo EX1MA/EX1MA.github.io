@@ -63,8 +63,12 @@ export const AboutSection = ({ data }: AboutSectionProps) => {
         const el = counters[i];
         if (!el) return;
         const obj = { val: 0 };
+        // el zorro guía mira los números mientras suben y brinca al terminar
+        const first = i === 0, last = i === stats.length - 1;
         gsap.to(obj, {
           val: stat.value, duration: 2.2, ease: 'expo.out',
+          onStart: () => { if (first) window.dispatchEvent(new Event('fox:count-start')); },
+          onComplete: () => { if (last) window.dispatchEvent(new Event('fox:count-end')); },
           onUpdate: () => { el.textContent = Math.round(obj.val) + stat.suffix; },
           scrollTrigger: { trigger: el, start: 'top 90%', once: true },
         });

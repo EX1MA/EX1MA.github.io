@@ -22,7 +22,7 @@ export const ScrollToTop = () => {
   return (
     <button
       ref={btnRef}
-      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); window.dispatchEvent(new Event('fox:sprint')); }}
       className={styles.scrollBtn}
       aria-label="Volver arriba"
     >
