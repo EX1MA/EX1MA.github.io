@@ -1,0 +1,94 @@
+{
+  "frameWidth": 56,
+  "frameHeight": 40,
+  "anchor": {
+    "x": 52,
+    "y": 39
+  },
+  "animations": {
+    "idle": {
+      "row": 0,
+      "frames": 4,
+      "fps": 4,
+      "loop": true
+    },
+    "walk": {
+      "row": 1,
+      "frames": 8,
+      "fps": 10,
+      "loop": true
+    },
+    "run": {
+      "row": 2,
+      "frames": 5,
+      "fps": 12,
+      "loop": true
+    },
+    "sit": {
+      "row": 3,
+      "frames": 6,
+      "fps": 6,
+      "loop": true
+    },
+    "look_up": {
+      "row": 4,
+      "frames": 6,
+      "fps": 6,
+      "loop": true
+    },
+    "think": {
+      "row": 5,
+      "frames": 6,
+      "fps": 6,
+      "loop": true
+    },
+    "crouch": {
+      "row": 6,
+      "frames": 2,
+      "fps": 3,
+      "loop": true
+    },
+    "jump": {
+      "row": 7,
+      "frames": 4,
+      "fps": 8,
+      "loop": false
+    },
+    "sniff": {
+      "row": 8,
+      "frames": 3,
+      "fps": 6,
+      "loop": true
+    },
+    "eat": {
+      "row": 9,
+      "frames": 2,
+      "fps": 3,
+      "loop": true
+    },
+    "howl": {
+      "row": 10,
+      "frames": 1,
+      "fps": 1,
+      "loop": true
+    },
+    "shake": {
+      "row": 11,
+      "frames": 2,
+      "fps": 8,
+      "loop": true
+    },
+    "sleep": {
+      "row": 12,
+      "frames": 4,
+      "fps": 2,
+      "loop": true
+    },
+    "head": {
+      "row": 13,
+      "frames": 2,
+      "fps": 1,
+      "loop": false
+    }
+  }
+}

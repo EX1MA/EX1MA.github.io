@@ -51,6 +51,7 @@ export const ContactSection = () => {
       if (!res.ok || json.success !== true) throw new Error(json.message);
       setStatus('success');
       form.current.reset();
+      window.dispatchEvent(new Event('fox:celebrate')); // el zorro guía celebra
     } catch {
       // Si el servicio falla, el mismo mensaje se puede mandar por correo
       const subject = `Mensaje del portafolio — ${data.get('user_name')}`;

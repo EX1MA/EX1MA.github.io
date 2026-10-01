@@ -88,7 +88,7 @@ export const AboutSection = ({ data }: AboutSectionProps) => {
             type="button"
             data-flip
             className={`${s.flipCard} ${flipped ? s.flipped : ''}`}
-            onClick={() => setFlipped(f => !f)}
+            onClick={() => { setFlipped(f => !f); window.dispatchEvent(new Event('fox:react')); }}
             aria-pressed={flipped}
             aria-label={flipped ? 'Mostrar ilustración' : 'Mostrar foto'}
           >
