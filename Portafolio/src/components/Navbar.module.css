@@ -136,6 +136,9 @@
   background-color: var(--border-color);
 }
 
+/* Zorro oculto: la patita queda apagada */
+.foxOff { filter: grayscale(1); opacity: 0.5; }
+
 /* ── Hamburger ── */
 .hamburger {
   display: none;

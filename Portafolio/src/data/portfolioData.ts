@@ -1,4 +1,5 @@
 import type { Project, Skill, Stat } from '../types';
+import foxCard from '../assets/fox/zorro-card.png';
 
 export interface RoleContent {
   themeColor: string;
@@ -137,6 +138,26 @@ export const portfolioData: Record<'developer' | 'designer', RoleContent> = {
         year: 2025,
         status: "En Desarrollo",
         category: "App Multiplataforma"
+      },
+      {
+        id: 7,
+        title: "Zorro guía de este portafolio",
+        client: "Proyecto personal · este sitio",
+        description: "La mascota en pixel art que te acompaña mientras navegas: un motor de animación propio en canvas que reacciona al scroll, al cursor, al tema y al formulario, y hasta brinca sobre el DOM.",
+        image: foxCard,
+        pixelArt: true,
+        technologies: ["TypeScript", "Canvas 2D", "GSAP", "ScrollTrigger", "React"],
+        features: [
+          "Motor propio a resolución nativa de pixel art",
+          "Reacciona al scroll, el cursor, el tema y el formulario",
+          "Acrobacias sobre elementos reales de la página",
+          "Respeta el movimiento reducido y se puede ocultar"
+        ],
+        demoLink: "https://github.com/EX1MA/EX1MA.github.io/tree/main/Portafolio/src/components/FoxGuide",
+        demoLabel: "Ver el código",
+        year: 2026,
+        status: "Completado",
+        category: "Animación · Canvas"
       }
     ],
     skills: [
@@ -232,6 +253,24 @@ export const portfolioData: Record<'developer' | 'designer', RoleContent> = {
         year: 2020,
         status: "Completado",
         category: "Contenido & Motion"
+      },
+      {
+        id: 104,
+        title: "Zorro guía — personaje en pixel art",
+        client: "Proyecto personal · este sitio",
+        description: "Mi avatar convertido en un personaje animado en pixel art: hoja de sprites limpia y unificada, cuadros intermedios para que respire y mueva la cola, y accesorios que cambian según el perfil.",
+        image: foxCard,
+        pixelArt: true,
+        technologies: ["Pixel art", "Animación por cuadros", "Personaje", "GSAP"],
+        features: [
+          "Paleta unificada de 9 colores",
+          "Cuadros intermedios: cola, respiración y parpadeo",
+          "Lentes en el perfil Dev y boina en Diseño",
+          "Efectos en pixel art: polvo, corazones, notas"
+        ],
+        year: 2026,
+        status: "Completado",
+        category: "Personaje · Pixel art"
       }
     ],
     skills: [
