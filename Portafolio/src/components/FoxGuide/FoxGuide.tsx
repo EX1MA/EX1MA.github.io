@@ -38,14 +38,19 @@ export function FoxGuide({ role }: { role: Role }) {
     const engine = new FoxEngine(canvas, img, sheetMeta as SheetMeta, prefersReducedMotion());
     engineRef.current = engine;
 
+    let wasDark: boolean | undefined;
     const readTheme = () => {
       const cs = getComputedStyle(document.documentElement);
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
       engine.setTheme({
         ink: cs.getPropertyValue('--text-color').trim() || '#1a1a1a',
         accent: cs.getPropertyValue('--accent-color').trim() || '#c9a227',
         primary: cs.getPropertyValue('--primary-color').trim() || '#d35400',
-        dark: document.documentElement.getAttribute('data-theme') === 'dark',
+        dark,
       });
+      // siesta al pasar a oscuro, se sacude al volver a claro (no en la carga inicial)
+      if (wasDark !== undefined && dark !== wasDark) engine.themeChanged(dark);
+      wasDark = dark;
     };
     readTheme();
     // el tema y el color del perfil cambian atributos de <html>
@@ -56,7 +61,14 @@ export function FoxGuide({ role }: { role: Role }) {
     gsap.ticker.add(tick);
 
     const onResize = () => engine.resize();
-    const onMove = (e: PointerEvent) => { if (e.pointerType === 'mouse') engine.setPointer(e.clientX); };
+    const onMove = (e: PointerEvent) => { if (e.pointerType === 'mouse') engine.setPointer(e.clientX, e.clientY); };
+    // formulario de contacto: escribir alegra al zorro; un correo inválido lo confunde
+    const inContactForm = (t: EventTarget | null) => t instanceof HTMLElement && !!t.closest('#contact form');
+    const onInput = (e: Event) => { if (inContactForm(e.target)) engine.typing(); };
+    const onFocusOut = (e: FocusEvent) => {
+      const el = e.target;
+      if (inContactForm(el) && el instanceof HTMLInputElement && el.type === 'email' && el.value && !el.validity.valid) engine.confused();
+    };
     const onLeave = () => engine.setPointer(undefined);
     const onCelebrate = () => engine.celebrate();
     const onReact = () => engine.react();
@@ -65,6 +77,8 @@ export function FoxGuide({ role }: { role: Role }) {
     document.documentElement.addEventListener('pointerleave', onLeave);
     window.addEventListener('fox:celebrate', onCelebrate);
     window.addEventListener('fox:react', onReact);
+    document.addEventListener('input', onInput);
+    document.addEventListener('focusout', onFocusOut);
 
     return () => {
       gsap.ticker.remove(tick);
@@ -74,6 +88,8 @@ export function FoxGuide({ role }: { role: Role }) {
       document.documentElement.removeEventListener('pointerleave', onLeave);
       window.removeEventListener('fox:celebrate', onCelebrate);
       window.removeEventListener('fox:react', onReact);
+      document.removeEventListener('input', onInput);
+      document.removeEventListener('focusout', onFocusOut);
       engineRef.current = null;
     };
   }, []);
@@ -82,6 +98,7 @@ export function FoxGuide({ role }: { role: Role }) {
   useEffect(() => {
     const engine = engineRef.current;
     if (!engine) return;
+    engine.setRole(role);
     const triggers: ScrollTrigger[] = [];
     const scenes = new Map<ScrollTrigger, Scene>();
     // si dos secciones están activas a la vez (Contacto y footer), manda la de más abajo
