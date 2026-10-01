@@ -54,8 +54,21 @@ const LENS = [200, 230, 255];
 const BERET = [150, 30, 40], BERET_HI = [190, 55, 60], BERET_STEM = [60, 10, 15];
 const BERET_ROWS = ['..#######..', '.#########.', '###########'];
 
+// Accesorios en las animaciones de movimiento: ojo por cuadro (lentes) y, si no sigue la regla
+// "boina = ojo + (-2, -7)", el centro de la boina. Los ojos se detectaron en la hoja de sprites
+// y los cuadros encogidos (agacharse, salto en el aire) se ubicaron a mano.
+type Anchor = { e: [number, number]; h?: [number, number] };
+const e = (x: number, y: number, h?: [number, number]): Anchor => ({ e: [x, y], h });
+const MOVE_ANCHORS: Record<string, Anchor[]> = {
+  idle:   [e(43, 18), e(43, 18), e(43, 18), e(43, 18)],
+  walk:   [e(45, 18), e(45, 18), e(44, 18), e(45, 17), e(44, 18), e(45, 18), e(45, 18), e(44, 18)],
+  run:    [e(45, 18), e(45, 19), e(44, 18), e(45, 19), e(45, 19)],
+  jump:   [e(45, 22), e(45, 12), e(48, 27, [46, 23]), e(50, 26, [48, 21])],
+  crouch: [e(45, 21, [43, 14]), e(46, 22, [44, 15])],
+};
+
 const BODY_CENTER = 36;      // x del centro del cuerpo dentro de la celda (mirando a la derecha)
-const STAGE_H = 64;          // alto del escenario en píxeles nativos
+const FOOTPRINT = 64;        // alto de la franja que ocupa normalmente (px nativos)
 const WALK_SPEED = 34;       // px nativos por segundo
 const RUN_SPEED = 88;
 const RUN_DISTANCE = 70;     // más lejos que esto, corre en vez de caminar
@@ -76,7 +89,9 @@ export class FoxEngine {
   private scale = 3;
   private mobile = false;
   private width = 0;          // ancho nativo
-  private ground = STAGE_H - 3;
+  private height = FOOTPRINT;  // alto nativo del lienzo (toda la ventana)
+  private floor = FOOTPRINT - 3; // borde inferior de la ventana
+  private ground = FOOTPRINT - 3; // altura de las patas del zorro (sube cuando salta sobre las letras)
   private t = 0;
   private particles: Particle[] = [];
 
@@ -86,7 +101,7 @@ export class FoxEngine {
   private left = false;       // mirando a la izquierda
   private scene: Scene | null = null;
   private targetX = 0;
-  private mode: 'move' | 'pose' | 'jump' | 'settle' | 'stalk' = 'move';
+  private mode: 'move' | 'pose' | 'jump' | 'settle' | 'stalk' | 'path' = 'move';
   private leapIn = true;      // la primera llegada (Hero) termina en salto
   private jump = { t: 0, dur: 0, x0: 0, x1: 0, h: 0, then: 'pose' as 'pose' | 'howl', landed: false };
   private settleUntil = 0;
@@ -111,6 +126,10 @@ export class FoxEngine {
   private looking = false;    // cursor sobre una tarjeta de proyecto
   private trailNear = false;  // un punto de la Trayectoria pasa a su altura
   private bangUntil = 0;
+  private path: {
+    pts: { x: number; y: number; air?: boolean }[]; i: number; t: number; phase: 'crouch' | 'air' | 'land';
+    x0: number; y0: number; c: number; dur: number; abort: boolean; onLand: (i: number) => void;
+  } | null = null;
   private fetch: { phase: 'out' | 'away' | 'back' | 'hold' | 'drop'; until: number } | null = null;
   private scrollSpeed = 0;
   private scrollAt = -10;
@@ -148,11 +167,15 @@ export class FoxEngine {
     } else {
       this.scale = 3;
     }
+    // el lienzo cubre toda la ventana para que el zorro pueda subir (p. ej. a las letras del Hero)
     this.width = Math.ceil(window.innerWidth / this.scale);
+    this.height = Math.ceil(window.innerHeight / this.scale);
     this.canvas.width = this.width;
-    this.canvas.height = STAGE_H;
+    this.canvas.height = this.height;
     this.canvas.style.width = `${this.width * this.scale}px`;
-    this.canvas.style.height = `${STAGE_H * this.scale}px`;
+    this.canvas.style.height = `${this.height * this.scale}px`;
+    this.floor = this.height - 3;
+    if (!this.path) this.ground = this.floor;
     this.ctx.imageSmoothingEnabled = false;
     // entra corriendo desde el borde más cercano a su lugar (derecha en escritorio, izquierda en celular)
     if (!this.placed) {
@@ -192,7 +215,7 @@ export class FoxEngine {
   setPointer(clientX: number | undefined, clientY = 0) {
     if (clientX === undefined) { this.pointerX = undefined; return; }
     this.pointerX = clientX / this.scale;
-    this.pointerY = (clientY - (window.innerHeight - STAGE_H * this.scale)) / this.scale;
+    this.pointerY = clientY / this.scale;
     this.pointerAt = this.t;
   }
 
@@ -241,6 +264,37 @@ export class FoxEngine {
     this.trailNear = near;
   }
 
+  /** Escala CSS (px de pantalla por px nativo) y alto de su franja en CSS */
+  get cssScale() { return this.scale; }
+  get footprintCss() { return FOOTPRINT * this.scale; }
+
+  /** ¿Está tranquilo en su lugar, listo para una acrobacia? */
+  get idle() {
+    return this.mode === 'pose' && !this.fetch && !this.path && !this.sleepy
+      && this.t > this.howlUntil && this.t > this.napUntil && this.t > this.shakeUntil;
+  }
+
+  /**
+   * Acrobacia: salta de punto en punto (px nativos, y = donde apoya las patas) y al final baja
+   * al suelo y regresa a su lugar. `onLand(i)` se llama al aterrizar en cada punto; los puntos
+   * `air` no se pisan: los toca en el aire (cabezazo a un chip) y sigue de largo.
+   */
+  perform(pts: { x: number; y: number; air?: boolean }[], onLand: (i: number) => void) {
+    if (this.reduced || !this.idle || !pts.length) return false;
+    const last = pts[pts.length - 1];
+    this.path = {
+      pts: [...pts, { x: last.x + (last.x < this.x ? -24 : 24), y: this.floor }],
+      i: 0, t: 0, phase: 'crouch', x0: this.x, y0: this.ground, c: 0, dur: 0, abort: false, onLand,
+    };
+    this.mode = 'path';
+    return true;
+  }
+
+  /** Si la página se mueve a media acrobacia, baja de un salto al suelo */
+  abortPerform() {
+    if (this.path) this.path.abort = true;
+  }
+
   /** Descargar CV: sale corriendo y regresa con el papel en la boca */
   fetchCV() {
     if (this.reduced || this.fetch || !this.scene) return;
@@ -285,7 +339,7 @@ export class FoxEngine {
     dt = Math.min(dt, 0.05);
     this.t += dt;
     const ctx = this.ctx;
-    ctx.clearRect(0, 0, this.width, STAGE_H);
+    ctx.clearRect(0, 0, this.width, this.height);
     if (!this.scene || !this.sheet.complete) return;
 
     if (this.reduced) { this.drawStatic(); return; }
@@ -300,6 +354,7 @@ export class FoxEngine {
       case 'settle': this.drawFox('crouch', 0); if (this.t > this.settleUntil) this.mode = 'pose'; break;
       case 'pose':   this.updatePose(); break;
       case 'stalk':  this.updateStalk(); break;
+      case 'path':   this.updatePath(dt); break;
     }
     this.stepParticles(dt);
   }
@@ -398,7 +453,7 @@ export class FoxEngine {
     // mira subir los contadores de Sobre mí
     if (this.t < this.watchUntil) {
       this.left = false;
-      this.emit(0.45, () => ({ x: this.x + rnd(0, 24), y: rnd(2, 12), vx: 0, vy: -2, g: 0, life: 0.9, size: 1, glyph: 'star', color: this.accent }));
+      this.emit(0.45, () => ({ x: this.x + rnd(0, 24), y: this.ground - rnd(48, 58), vx: 0, vy: -2, g: 0, life: 0.9, size: 1, glyph: 'star', color: this.accent }));
       this.drawShadow(22);
       this.drawFx('look_up', this.frameAt('look_up'), this.gestures());
       return;
@@ -455,7 +510,7 @@ export class FoxEngine {
         break;
       }
       case 'look_up':
-        this.emit(0.5, () => ({ x: this.x + rnd(-2, 26) * (this.left ? -1 : 1), y: rnd(2, 12), vx: 0, vy: -2, g: 0, life: 0.9, size: 1, glyph: 'star', color: this.accent }));
+        this.emit(0.5, () => ({ x: this.x + rnd(-2, 26) * (this.left ? -1 : 1), y: this.ground - rnd(48, 58), vx: 0, vy: -2, g: 0, life: 0.9, size: 1, glyph: 'star', color: this.accent }));
         this.drawShadow(22);
         this.drawFx('look_up', this.frameAt('look_up', tailSpeed), g);
         break;
@@ -534,6 +589,59 @@ export class FoxEngine {
     this.drawFox('run', f, [0, -2, -1, -2, 0][f]);
   }
 
+  private updatePath(dt: number) {
+    const p = this.path!;
+    p.t += dt;
+    const hop = (to: { x: number; y: number }) => {
+      p.x0 = this.x; p.y0 = this.ground; p.t = 0; p.phase = 'air';
+      const dx = to.x - p.x0;
+      // curva cuadrática: el punto de control queda por encima del más alto de los dos extremos
+      p.c = Math.min(p.y0, to.y) - (10 + Math.abs(dx) * 0.12);
+      p.dur = Math.min(0.75, Math.max(0.3, 0.26 + Math.hypot(dx, to.y - p.y0) / 420));
+      this.left = dx < 0;
+    };
+    if (p.phase === 'crouch') {
+      this.drawShadow(24);
+      this.drawFox('jump', 0, 0, 1.06, 0.92);
+      if (p.t > 0.14) hop(p.pts[0]);
+      return;
+    }
+    const to = p.pts[p.i];
+    if (p.phase === 'air') {
+      const k = Math.min(1, p.t / p.dur);
+      this.x = p.x0 + (to.x - p.x0) * k;
+      this.ground = (1 - k) ** 2 * p.y0 + 2 * (1 - k) * k * p.c + k * k * to.y;
+      const vy = 2 * (1 - k) * (p.c - p.y0) + 2 * k * (to.y - p.c);
+      this.drawFox('jump', vy < -40 ? 1 : vy > 40 ? 3 : 2);
+      if (k >= 1) {
+        this.ground = to.y;
+        if (p.i < p.pts.length - 1) p.onLand(p.i);
+        if (to.air) {   // cabezazo: no se detiene, cae directo al siguiente punto
+          p.i++;
+          hop(p.pts[p.i]);
+          return;
+        }
+        p.phase = 'land'; p.t = 0;
+        this.dustPuff(3, 16, true);
+      }
+      return;
+    }
+    // aterrizaje: se aplasta un instante y sigue al siguiente punto
+    const sq = Math.sin(Math.min(1, p.t / 0.12) * Math.PI);
+    this.drawShadow(24);
+    this.drawFox('crouch', 0, 0, 1 + 0.1 * sq, 1 - 0.12 * sq);
+    if (p.t < 0.12) return;
+    if (p.i === p.pts.length - 1) {          // ya está en el suelo: regresa a su lugar
+      this.path = null;
+      this.ground = this.floor;
+      this.mode = 'move';
+      return;
+    }
+    p.i = p.abort ? p.pts.length - 1 : p.i + 1;
+    if (p.abort) p.pts[p.i] = { x: this.x + (this.left ? -16 : 16), y: this.floor };
+    hop(p.pts[p.i]);
+  }
+
   /** Corre hacia tx; devuelve true al llegar. Con `carry` lleva el papel en la boca */
   private runTo(tx: number, dt: number, carry: boolean) {
     const dx = tx - this.x;
@@ -601,7 +709,7 @@ export class FoxEngine {
     const dx = Math.abs(this.pointerX - this.x);
     const still = this.t - this.pointerAt > 1.4;
     // el cursor debe estar cerca del suelo (hasta ~120 px nativos por encima del escenario)
-    return still && dx > 14 && dx < 150 && this.pointerY > -120 && this.pointerY < STAGE_H;
+    return still && dx > 14 && dx < 150 && this.pointerY > this.floor - 180;
   }
 
   private updateStalk() {
@@ -664,8 +772,36 @@ export class FoxEngine {
   }
 
   private drawFox(anim: string, frame: number, bob = 0, sx = 1, sy = 1) {
+    const { frameWidth: W, frameHeight: H } = this.meta;
     const a = this.meta.animations[anim];
-    this.blit(this.sheet, frame * this.meta.frameWidth, a.row * this.meta.frameHeight, bob, sx, sy);
+    const anchor = MOVE_ANCHORS[anim]?.[frame];
+    if (!anchor) { this.blit(this.sheet, frame * W, a.row * H, bob, sx, sy); return; }
+    // copia el cuadro al buffer y le pone el accesorio del perfil antes de dibujarlo
+    const b = this.bctx;
+    b.clearRect(0, 0, W, H);
+    b.drawImage(this.sheet, frame * W, a.row * H, W, H, 0, 0, W, H);
+    const [ex, ey] = anchor.e;
+    const rgb = (c: number[]) => `rgb(${c[0]},${c[1]},${c[2]})`;
+    if (this.role === 'developer') {
+      b.fillStyle = rgb(GLASS_FRAME);
+      b.fillRect(ex - 2, ey - 2, 5, 1); b.fillRect(ex - 2, ey + 1, 5, 1);
+      b.fillRect(ex - 2, ey - 1, 1, 2); b.fillRect(ex + 2, ey - 1, 1, 2);
+      b.fillRect(ex - 6, ey - 1, 4, 1); b.fillRect(ex + 3, ey, 2, 1);   // patilla y puente
+      b.globalAlpha = 0.55;
+      b.fillStyle = rgb(LENS);
+      b.fillRect(ex - 1, ey - 1, 3, 2);
+      b.globalAlpha = 1;
+    } else {
+      const [cx, by] = anchor.h ?? [ex - 2, ey - 7];
+      BERET_ROWS.forEach((row, j) => [...row].forEach((c, i) => {
+        if (c !== '#') return;
+        b.fillStyle = rgb(j === 0 && i > 2 && i < 6 ? BERET_HI : BERET);
+        b.fillRect(cx - 5 + i, by - 2 + j, 1, 1);
+      }));
+      b.fillStyle = rgb(BERET_STEM);
+      b.fillRect(cx, by - 3, 1, 1);
+    }
+    this.blit(this.buf, 0, 0, bob, sx, sy);
   }
 
   /** Dibuja una pose sentada aplicando parpadeo, accesorio, oreja y cabeza ladeada píxel por píxel */
