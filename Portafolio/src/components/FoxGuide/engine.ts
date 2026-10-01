@@ -32,15 +32,23 @@ const GLYPH = {
   star:  ['010', '111', '010'],
   dot:   ['11', '11'],
   heart: ['01010', '11111', '11111', '01110', '00100'],
+  ask:   ['01110', '10001', '00001', '00010', '00100', '00000', '00100'],
 };
 
-// Datos de cada pose sentada dentro de la celda de 56x40:
-// ojos, puntas de orejas [x0, x1, y0, y1] y cuadros en que la cabeza sube 1 px al respirar
-const POSE_PX: Record<string, { eyes: number[][]; ears: number[][]; inh: number[]; neck?: number; from?: number }> = {
-  sit:     { eyes: [[45, 18]], ears: [[36, 39, 8, 10], [47, 50, 8, 10]], inh: [1, 2] },
-  look_up: { eyes: [[44, 11], [45, 11], [43, 12]], ears: [[36, 39, 7, 9], [46, 49, 6, 8]], inh: [1, 2] },
-  think:   { eyes: [[44, 15], [45, 15], [43, 16]], ears: [[37, 40, 10, 12], [45, 48, 10, 12]], inh: [1, 2], neck: 22, from: 35 },
+// Datos de cada pose sentada dentro de la celda de 56x40: ojos, puntas de orejas [x0, x1, y0, y1],
+// cuadros en que la cabeza sube 1 px al respirar, cuello/inicio del cuerpo para ladear la cabeza
+// y dónde van los lentes (centro del ojo) y la boina (centro de su fila inferior)
+interface PosePx { eyes: number[][]; ears: number[][]; inh: number[]; neck: number; from: number; glasses: number[]; hat: number[] }
+const POSE_PX: Record<string, PosePx> = {
+  sit:     { eyes: [[45, 18]], ears: [[36, 39, 8, 10], [47, 50, 8, 10]], inh: [1, 2], neck: 21, from: 31, glasses: [45, 18], hat: [43, 11] },
+  look_up: { eyes: [[44, 11], [45, 11], [43, 12]], ears: [[36, 39, 7, 9], [46, 49, 6, 8]], inh: [1, 2], neck: 18, from: 31, glasses: [44, 11], hat: [42, 9] },
+  think:   { eyes: [[44, 15], [45, 15], [43, 16]], ears: [[37, 40, 10, 12], [45, 48, 10, 12]], inh: [1, 2], neck: 22, from: 35, glasses: [44, 15], hat: [43, 13] },
 };
+export type Role = 'developer' | 'designer';
+const GLASS_FRAME = [28, 28, 34];
+const LENS = [200, 230, 255];
+const BERET = [150, 30, 40], BERET_HI = [190, 55, 60], BERET_STEM = [60, 10, 15];
+const BERET_ROWS = ['..#######..', '.#########.', '###########'];
 
 const BODY_CENTER = 36;      // x del centro del cuerpo dentro de la celda (mirando a la derecha)
 const STAGE_H = 64;          // alto del escenario en píxeles nativos
@@ -72,13 +80,25 @@ export class FoxEngine {
   private left = false;       // mirando a la izquierda
   private scene: Scene | null = null;
   private targetX = 0;
-  private mode: 'move' | 'pose' | 'jump' | 'settle' = 'move';
+  private mode: 'move' | 'pose' | 'jump' | 'settle' | 'stalk' = 'move';
   private leapIn = true;      // la primera llegada (Hero) termina en salto
   private jump = { t: 0, dur: 0, x0: 0, x1: 0, h: 0, then: 'pose' as 'pose' | 'howl', landed: false };
   private settleUntil = 0;
   private howlUntil = 0;
   private turnUntil = 0;
   private pointerX: number | undefined;
+  private pointerY = 0;       // relativo al escenario (negativo = por encima)
+  private pointerAt = 0;      // último movimiento del cursor
+  private role: Role = 'developer';
+  // interacciones
+  private holdUntil = 0;      // se queda donde aterrizó tras cazar el cursor
+  private stalkUntil = 0;
+  private nextPounce = 4;
+  private excitedUntil = 0;   // escribiendo en el formulario
+  private confusedUntil = 0;  // correo inválido
+  private napUntil = 0;       // tema oscuro
+  private shakeUntil = 0;     // tema claro
+  private petting = false;
   private scrollSpeed = 0;
   private scrollAt = -10;
   private lastFrame = -1;
@@ -145,8 +165,34 @@ export class FoxEngine {
     if (this.reduced) this.x = this.targetX;
   }
 
-  setPointer(clientX: number | undefined) {
-    this.pointerX = clientX === undefined ? undefined : clientX / this.scale;
+  setPointer(clientX: number | undefined, clientY = 0) {
+    if (clientX === undefined) { this.pointerX = undefined; return; }
+    this.pointerX = clientX / this.scale;
+    this.pointerY = (clientY - (window.innerHeight - STAGE_H * this.scale)) / this.scale;
+    this.pointerAt = this.t;
+  }
+
+  /** Lentes en el perfil Dev, boina en el perfil Diseño */
+  setRole(role: Role) {
+    this.role = role;
+  }
+
+  /** Alguien escribe en el formulario: orejas atentas y cola contenta */
+  typing() {
+    this.excitedUntil = this.t + 0.7;
+    if (this.t > this.gest.ee) { this.gest.ee = this.t + 0.18; this.gest.ear = Math.random() < 0.5 ? 0 : 1; }
+  }
+
+  /** Correo inválido: ladea la cabeza con un signo de interrogación */
+  confused() {
+    this.confusedUntil = this.t + 1.8;
+  }
+
+  /** Cambio de tema: en oscuro toma una siesta, en claro se despierta y se sacude */
+  themeChanged(dark: boolean) {
+    if (this.reduced) return;
+    if (dark) { this.napUntil = this.t + 2.6; this.shakeUntil = 0; }
+    else { this.shakeUntil = this.t + 0.7; this.napUntil = 0; }
   }
 
   setScrollSpeed(v: number) {
@@ -183,6 +229,7 @@ export class FoxEngine {
       case 'jump':   this.updateJump(dt); break;
       case 'settle': this.drawFox('crouch', 0); if (this.t > this.settleUntil) this.mode = 'pose'; break;
       case 'pose':   this.updatePose(); break;
+      case 'stalk':  this.updateStalk(); break;
     }
     this.stepParticles(dt);
   }
@@ -247,12 +294,12 @@ export class FoxEngine {
       return;
     }
     if (j.then === 'howl') this.howlUntil = this.t + 1.8;
-    this.mode = Math.abs(this.targetX - this.x) > 1.5 ? 'move' : 'pose';
+    this.mode = this.t < this.holdUntil || Math.abs(this.targetX - this.x) <= 1.5 ? 'pose' : 'move';
   }
 
   private updatePose() {
     const scene = this.scene!;
-    if (Math.abs(this.targetX - this.x) > 2) { this.mode = 'move'; return; }
+    if (Math.abs(this.targetX - this.x) > 2 && this.t >= this.holdUntil) { this.mode = 'move'; return; }
 
     // aullido de celebración: notas y corazones, luego vuelve a su pose
     if (this.t < this.howlUntil) {
@@ -261,6 +308,20 @@ export class FoxEngine {
       const ph = (this.howlUntil - this.t) % 0.8;
       this.drawShadow(28);
       this.drawFox('howl', 0, -Math.round(2 * Math.sin(ph / 0.8 * Math.PI)));
+      return;
+    }
+
+    // tema oscuro: siesta corta; tema claro: se sacude
+    if (this.t < this.napUntil) {
+      this.emit(0.8, () => ({ x: this.x + (this.left ? -14 : 12), y: this.ground - 20, vx: this.left ? -5 : 5, vy: -7, g: 0, life: 1.8, size: 1, glyph: 'z', color: this.ink }));
+      this.drawShadow(30);
+      this.drawFox('sleep', this.frameAt('sleep'));
+      return;
+    }
+    if (this.t < this.shakeUntil) {
+      if (Math.random() < 0.3) this.dustPuff(1, 14, true);
+      this.drawShadow(30);
+      this.drawFox('shake', this.frameAt('shake'));
       return;
     }
 
@@ -273,11 +334,37 @@ export class FoxEngine {
     }
     if (this.t < this.turnUntil) { this.drawShadow(22); this.drawFox('crouch', 0); return; }
 
-    const g = this.gestures();
+    // acariciar: el cursor encima del zorro
+    this.petting = this.pointerX !== undefined && Math.abs(this.pointerX - this.x) < 18
+      && this.pointerY > this.ground - 38 && this.pointerY < this.ground + 2;
+    const g: { blink: boolean; ear?: number; tilt?: number } = this.gestures();
+    let tailSpeed = 1;
+    if (this.petting) {
+      g.blink = true;   // ojos entrecerrados de gusto
+      tailSpeed = 3;
+      this.emit(0.35, () => ({ x: this.x + rnd(-6, 10) * (this.left ? -1 : 1), y: this.ground - 40, vx: rnd(-3, 3), vy: -12, g: 0, life: 1, size: 1, glyph: 'heart', color: this.primary }));
+    }
+    if (this.t < this.excitedUntil) tailSpeed = Math.max(tailSpeed, 2.5);
+    const confused = this.t < this.confusedUntil;
+    if (confused) {
+      const k = Math.min(1, (this.confusedUntil - this.t) / 0.25, (this.t - this.confusedUntil + 1.8) / 0.25);
+      g.tilt = 2 * k;
+      this.glyph('ask', this.x + (this.left ? -14 : 9), this.ground - 48, this.primary);
+    }
+
+    // cazar el cursor: si se queda quieto cerca, se agacha, menea la cola y salta
+    if (scene.face === 'pointer' && !this.petting && this.canPounce()) {
+      this.mode = 'stalk';
+      this.stalkUntil = this.t + 0.9;
+      this.left = this.pointerX! < this.x;
+      this.drawShadow(24); this.drawFox('crouch', 0);
+      return;
+    }
+
     switch (scene.pose) {
       case 'sit':
         this.drawShadow(22);
-        this.drawFx('sit', this.frameAt('sit'), g);
+        this.drawFx('sit', this.frameAt('sit', tailSpeed), g);
         break;
       case 'think': {
         const T = this.t % 4;
@@ -285,13 +372,13 @@ export class FoxEngine {
         const n = Math.floor(this.t * 1.6) % 4;
         for (let i = 0; i < n; i++) this.glyph('dot', this.x + (this.left ? -16 - i * 4 : 14 + i * 4), this.ground - 40 - i * 2, this.ink);
         this.drawShadow(22);
-        this.drawFx('think', this.frameAt('think'), { ...g, tilt: 2 * tilt });
+        this.drawFx('think', this.frameAt('think', tailSpeed), { ...g, tilt: Math.max(g.tilt ?? 0, 2 * tilt) });
         break;
       }
       case 'look_up':
         this.emit(0.5, () => ({ x: this.x + rnd(-2, 26) * (this.left ? -1 : 1), y: rnd(2, 12), vx: 0, vy: -2, g: 0, life: 0.9, size: 1, glyph: 'star', color: this.accent }));
         this.drawShadow(22);
-        this.drawFx('look_up', this.frameAt('look_up'), g);
+        this.drawFx('look_up', this.frameAt('look_up', tailSpeed), g);
         break;
       case 'sniff': {
         const f = this.frameAt('sniff');
@@ -316,7 +403,7 @@ export class FoxEngine {
           this.drawFox('run', f, [0, -2, -1, -2, 0][f]);
         } else {
           this.drawShadow(22);
-          this.drawFx('sit', this.frameAt('sit'), g);
+          this.drawFx('sit', this.frameAt('sit', tailSpeed), g);
         }
         break;
       }
@@ -332,6 +419,34 @@ export class FoxEngine {
     }
   }
 
+  private canPounce() {
+    if (this.pointerX === undefined || this.t < this.nextPounce || this.t < this.excitedUntil + 2) return false;
+    const dx = Math.abs(this.pointerX - this.x);
+    const still = this.t - this.pointerAt > 1.4;
+    // el cursor debe estar cerca del suelo (hasta ~120 px nativos por encima del escenario)
+    return still && dx > 14 && dx < 150 && this.pointerY > -120 && this.pointerY < STAGE_H;
+  }
+
+  private updateStalk() {
+    if (this.pointerX === undefined || this.t - this.pointerAt < 0.05) {
+      // el cursor se movió: se cancela la cacería
+      this.mode = 'pose';
+      this.nextPounce = this.t + 2;
+      this.updatePose();
+      return;
+    }
+    // agachado, meneando la cola (alterna los dos cuadros de agacharse)
+    const wiggle = Math.floor(this.t * 7) % 2;
+    this.drawShadow(26);
+    this.drawFox('crouch', wiggle);
+    if (this.t >= this.stalkUntil) {
+      const to = Math.max(20, Math.min(this.width - 20, this.pointerX));
+      this.nextPounce = this.t + 7;
+      this.holdUntil = this.t + 0.16 + 0.55 + 0.18 + 1.2;
+      this.startJump(this.x, to, 18, 0.55, 'pose');
+    }
+  }
+
   private drawStatic() {
     // movimiento reducido: sentado y quieto (dormido en el footer), sin partículas ni ciclos
     const sleep = this.scene!.pose === 'sleep';
@@ -344,9 +459,9 @@ export class FoxEngine {
     return Math.round(frac * this.width);
   }
 
-  private frameAt(anim: string) {
+  private frameAt(anim: string, speed = 1) {
     const a = this.meta.animations[anim];
-    return Math.floor(this.t * a.fps) % a.frames;
+    return Math.floor(this.t * a.fps * speed) % a.frames;
   }
 
   /** x de la esquina izquierda de la celda para que el centro del cuerpo quede en this.x */
@@ -376,7 +491,7 @@ export class FoxEngine {
     this.blit(this.sheet, frame * this.meta.frameWidth, a.row * this.meta.frameHeight, bob, sx, sy);
   }
 
-  /** Dibuja una pose sentada aplicando parpadeo, oreja y cabeza ladeada píxel por píxel */
+  /** Dibuja una pose sentada aplicando parpadeo, accesorio, oreja y cabeza ladeada píxel por píxel */
   private drawFx(anim: string, frame: number, o: { blink: boolean; ear?: number; tilt?: number }) {
     const { frameWidth: W, frameHeight: H } = this.meta;
     const a = this.meta.animations[anim];
@@ -384,32 +499,57 @@ export class FoxEngine {
     b.clearRect(0, 0, W, H);
     b.drawImage(this.sheet, frame * W, a.row * H, W, H, 0, 0, W, H);
     const p = POSE_PX[anim];
-    if (p && (o.blink || o.ear !== undefined || o.tilt)) {
-      const img = b.getImageData(0, 0, W, H), d = img.data, src = new Uint8ClampedArray(d);
+    if (p) {
+      const img = b.getImageData(0, 0, W, H), d = img.data;
       const px = (x: number, y: number) => (y * W + x) * 4;
+      const put = (x: number, y: number, c: number[]) => {
+        if (x < 0 || y < 0 || x >= W || y >= H) return;
+        const i = px(x, y); d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; d[i + 3] = 255;
+      };
       const dy = p.inh.includes(frame) ? -1 : 0;
-      if (o.tilt && p.neck !== undefined && p.from !== undefined) {
-        for (let y = 0; y < p.neck; y++) {
-          const sh = Math.round(o.tilt * (p.neck - y) / 7);
-          if (!sh) continue;
-          for (let x = W - 1; x >= p.from; x--) {
-            const s0 = x - sh, i = px(x, y);
-            if (s0 >= p.from) for (let k = 0; k < 4; k++) d[i + k] = src[px(s0, y) + k];
-            else d[i + 3] = 0;
-          }
-        }
-      }
-      if (o.ear !== undefined) {
-        const [x0, x1, y0, y1] = p.ears[o.ear];
-        for (let y = y0 + dy; y <= y1 + dy; y++) for (let x = x1; x >= x0; x--) {
-          const i = px(x, y);
-          if (src[i + 3]) for (let k = 0; k < 4; k++) d[px(x + 1, y) + k] = src[i + k];
-          if (x === x0 || !src[px(x - 1, y) + 3]) d[i + 3] = 0;
-        }
-      }
+      // 1) parpadeo: el ojo toma el color del pelo de arriba
       if (o.blink) for (const [ex, ey] of p.eyes) {
         const i = px(ex, ey + dy), up = px(ex, ey + dy - 1);
-        for (let k = 0; k < 3; k++) d[i + k] = src[up + k];
+        for (let k = 0; k < 3; k++) d[i + k] = d[up + k];
+      }
+      // 2) accesorio según el perfil
+      if (this.role === 'developer') {
+        const [ex, ey0] = p.glasses, ey = ey0 + dy;
+        for (let x = ex - 2; x <= ex + 2; x++) for (let y = ey - 2; y <= ey + 1; y++) {
+          if (x === ex - 2 || x === ex + 2 || y === ey - 2 || y === ey + 1) put(x, y, GLASS_FRAME);
+          else if (d[px(x, y) + 3]) { const i = px(x, y); for (let k = 0; k < 3; k++) d[i + k] = Math.round(d[i + k] * 0.45 + LENS[k] * 0.55); }
+        }
+        for (let x = ex - 6; x < ex - 2; x++) put(x, ey - 1, GLASS_FRAME);   // patilla
+        put(ex + 3, ey, GLASS_FRAME); put(ex + 4, ey, GLASS_FRAME);          // puente
+      } else {
+        const [cx, by0] = p.hat, by = by0 + dy;
+        BERET_ROWS.forEach((row, j) => [...row].forEach((c, i) => {
+          if (c === '#') put(cx - 5 + i, by - 2 + j, j === 0 && i > 2 && i < 6 ? BERET_HI : BERET);
+        }));
+        put(cx, by - 3, BERET_STEM);
+      }
+      // 3) oreja y cabeza ladeada se calculan sobre la imagen ya con accesorio
+      if (o.ear !== undefined || o.tilt) {
+        const src = new Uint8ClampedArray(d);
+        if (o.tilt) {
+          for (let y = 0; y < p.neck; y++) {
+            const sh = Math.round(o.tilt * (p.neck - y) / 7);
+            if (!sh) continue;
+            for (let x = W - 1; x >= p.from; x--) {
+              const s0 = x - sh, i = px(x, y);
+              if (s0 >= p.from) for (let k = 0; k < 4; k++) d[i + k] = src[px(s0, y) + k];
+              else d[i + 3] = 0;
+            }
+          }
+        }
+        if (o.ear !== undefined && !o.tilt) {
+          const [x0, x1, y0, y1] = p.ears[o.ear];
+          for (let y = y0 + dy; y <= y1 + dy; y++) for (let x = x1; x >= x0; x--) {
+            const i = px(x, y);
+            if (src[i + 3]) for (let k = 0; k < 4; k++) d[px(x + 1, y) + k] = src[i + k];
+            if (x === x0 || !src[px(x - 1, y) + 3]) d[i + 3] = 0;
+          }
+        }
       }
       b.putImageData(img, 0, 0);
     }
