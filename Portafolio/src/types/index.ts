@@ -18,6 +18,8 @@ export interface Project {
   status?: 'Completado' | 'En Desarrollo' | 'Mantenimiento' | 'Concepto';
   category?: string;
   highlight?: boolean;
+  /** Imagen en pixel art: se escala sin suavizar */
+  pixelArt?: boolean;
 }
 
 export interface Skill {

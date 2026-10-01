@@ -3,6 +3,7 @@ import { gsap, ScrollTrigger } from '../../animations/gsap';
 import { prefersReducedMotion } from '../../utils/motion';
 import type { Role } from '../../types';
 import { FoxEngine, type Scene, type SheetMeta } from './engine';
+import { isFoxHidden } from './foxVisibility';
 import sheetUrl from '../../assets/fox/zorro.png';
 import sheetMeta from '../../assets/fox/zorro.json';
 import styles from './FoxGuide.module.css';
@@ -58,7 +59,14 @@ export function FoxGuide({ role }: { role: Role }) {
     const themeObserver = new MutationObserver(readTheme);
     themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'style'] });
 
-    const tick = (_time: number, deltaMs: number) => engine.tick(deltaMs / 1000);
+    // el visitante puede ocultarlo desde el botón 🐾 del menú
+    let hidden = isFoxHidden();
+    const applyHidden = () => { canvas.style.display = hidden ? 'none' : ''; };
+    applyHidden();
+    const onVisibility = (e: Event) => { hidden = (e as CustomEvent<boolean>).detail; applyHidden(); };
+    window.addEventListener('fox:visibility', onVisibility);
+
+    const tick = (_time: number, deltaMs: number) => { if (!hidden) engine.tick(deltaMs / 1000); };
     gsap.ticker.add(tick);
 
     const onResize = () => engine.resize();
@@ -106,6 +114,7 @@ export function FoxGuide({ role }: { role: Role }) {
 
     return () => {
       gsap.ticker.remove(tick);
+      window.removeEventListener('fox:visibility', onVisibility);
       themeObserver.disconnect();
       window.removeEventListener('resize', onResize);
       window.removeEventListener('pointermove', onMove);
@@ -180,9 +189,13 @@ export function FoxGuide({ role }: { role: Role }) {
     // ── Acrobacia en el Hero: brinca sobre las letras del nombre y cada una rebota al pisarla ──
     const chars = () => Array.from(document.querySelectorAll<HTMLElement>('#hero [data-char]'));
     const canAct = () => activeSelector === '#hero' && window.scrollY < 30 && window.innerWidth >= 900 && engine.idle;
-    let nextAct = performance.now() + 5500;   // la primera vez, poco después de llegar al Hero
-    const act = () => {
+    // sale sola una vez por visita (poco después de llegar al Hero); después, solo al pasar el cursor por el nombre
+    const ACT_KEY = 'fox-name-act';
+    const actedThisVisit = () => { try { return sessionStorage.getItem(ACT_KEY) === '1'; } catch { return true; } };
+    let nextAct = performance.now() + 5500;
+    const act = (e?: Event) => {
       const list = chars();
+      if (!e && actedThisVisit()) return;
       if (!list.length || !canAct() || performance.now() < nextAct) return;
       const s = engine.cssScale;
       // de derecha a izquierda (empieza por la letra más cercana al zorro), una sí y una no
@@ -193,30 +206,27 @@ export function FoxGuide({ role }: { role: Role }) {
         const tall = /[A-ZÁÉÍÓÚÑbdfhklt]/.test(el.textContent ?? '');
         return { x: (r.left + r.width / 2) / s, y: (r.top + r.height * (tall ? 0.2 : 0.42)) / s };
       });
-      if (engine.perform(pts, i => bounce(picked[i]))) nextAct = performance.now() + 12000;
+      if (engine.perform(pts, i => bounce(picked[i]))) {
+        nextAct = performance.now() + 12000;
+        try { sessionStorage.setItem(ACT_KEY, '1'); } catch { /* sin almacenamiento: no pasa nada */ }
+      }
     };
     const bounce = (el: HTMLElement) => gsap.timeline()
       .to(el, { y: 6, scaleY: 0.82, transformOrigin: '50% 100%', duration: 0.08, ease: 'power2.out' })
       .to(el, { y: -5, scaleY: 1.06, duration: 0.14, ease: 'power2.out' })
       .to(el, { y: 0, scaleY: 1, duration: 0.35, ease: 'elastic.out(1, 0.45)' });
-    const timer = window.setInterval(act, 1000);
+    const timer = window.setInterval(() => act(), 1000);
     // pasar el cursor por el nombre lo invita a repetir (con pausa de 12 s entre acrobacias)
     const title = document.querySelector('#hero h1');
     title?.addEventListener('pointerenter', act);
-    // ── Habilidades: cabezazo a los chips (al pasar el cursor y, de vez en cuando, solo) ──
+    // ── Habilidades: cabezazo al chip que está bajo el cursor ──
     let nextBop = performance.now() + 3000;
-    const bop = (chip?: HTMLElement) => {
+    const bop = (chip: HTMLElement) => {
       if (activeSelector !== '#skills' || window.innerWidth < 900 || !engine.idle || performance.now() < nextBop) return;
       const s = engine.cssScale;
-      const reachable = (el: HTMLElement) => {
-        const r = el.getBoundingClientRect();
-        return r.right > 0 && r.left < window.innerWidth && r.bottom > window.innerHeight - 460 && r.bottom < window.innerHeight - 140;
-      };
-      if (!chip) {
-        const all = Array.from(document.querySelectorAll<HTMLElement>('#skills [data-chip]')).filter(reachable);
-        chip = all[Math.floor(Math.random() * all.length)];
-      }
-      if (!chip || !reachable(chip)) return;
+      // solo chips que alcanza de un salto razonable
+      const r0 = chip.getBoundingClientRect();
+      if (r0.bottom < window.innerHeight - 460 || r0.bottom > window.innerHeight - 140) return;
       const r = chip.getBoundingClientRect();
       // salta para que la cabeza toque la parte de abajo del chip
       const pt = { x: (r.left + r.width / 2) / s, y: r.bottom / s + 34, air: true };
@@ -230,7 +240,6 @@ export function FoxGuide({ role }: { role: Role }) {
       if (chip) bop(chip);
     };
     document.addEventListener('pointerover', onChipOver);
-    const bopTimer = window.setInterval(() => { if (Math.random() < 0.35) bop(); }, 3000);
 
     const onScroll = () => { if (activeSelector === '#hero' && window.scrollY > 40) engine.abortPerform(); };
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -239,7 +248,6 @@ export function FoxGuide({ role }: { role: Role }) {
       cancelAnimationFrame(id);
       triggers.forEach(t => t.kill());
       window.clearInterval(timer);
-      window.clearInterval(bopTimer);
       document.removeEventListener('pointerover', onChipOver);
       title?.removeEventListener('pointerenter', act);
       window.removeEventListener('scroll', onScroll);

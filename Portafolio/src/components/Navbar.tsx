@@ -3,6 +3,7 @@ import { gsap, ScrollTrigger, useGSAP } from '../animations/gsap';
 import navStyles from './Navbar.module.css';
 import { prefersReducedMotion } from '../utils/motion';
 import type { Role } from '../types';
+import { isFoxHidden, setFoxHidden } from './FoxGuide/foxVisibility';
 
 const NAV_LINKS = [
   { id: 'about',    label: 'Sobre Mí' },
@@ -22,6 +23,7 @@ export const Navbar = ({ currentRole, onSwitchRole }: NavbarProps) => {
   const [theme,   setTheme]   = useState(() =>
     window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   );
+  const [foxHidden, setFoxHiddenState] = useState(isFoxHidden);
   const [active, setActive] = useState('');
   const navRef       = useRef<HTMLElement>(null);
   const listRef      = useRef<HTMLUListElement>(null);
@@ -164,6 +166,16 @@ export const Navbar = ({ currentRole, onSwitchRole }: NavbarProps) => {
             ✦ Diseño
           </button>
         </div>
+
+        <button
+          onClick={() => { setFoxHidden(!foxHidden); setFoxHiddenState(!foxHidden); }}
+          className={`${navStyles.themeBtn} ${foxHidden ? navStyles.foxOff : ''}`}
+          aria-pressed={!foxHidden}
+          aria-label={foxHidden ? 'Mostrar al zorro' : 'Ocultar al zorro'}
+          title={foxHidden ? 'Mostrar al zorro' : 'Ocultar al zorro'}
+        >
+          🐾
+        </button>
 
         <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className={navStyles.themeBtn} aria-label="Cambiar tema">
           {theme === 'light' ? '🌙' : '☀️'}

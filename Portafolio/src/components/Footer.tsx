@@ -80,7 +80,7 @@ export const Footer = () => {
             © {new Date().getFullYear()} Joel Contreras Bautista. Todos los derechos reservados.
           </p>
           <p className={s.made}>
-            Hecho con React + GSAP ✦
+            Hecho con React + GSAP ✦ · El zorro es pixel art animado con un motor propio en canvas
           </p>
         </div>
       </div>
