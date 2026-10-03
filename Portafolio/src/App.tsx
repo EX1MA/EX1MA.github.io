@@ -11,6 +11,7 @@ import { ScrollProgress } from './components/ScrollProgress';
 import { CustomCursor } from './components/CustomCursor';
 import { ScrollToTop } from './components/ScrollToTop';
 import { FoxGuide } from './components/FoxGuide/FoxGuide';
+import { MobileDock } from './components/MobileDock';
 
 import { gsap, ScrollTrigger, SplitText } from './animations/gsap';
 import { prefersReducedMotion } from './utils/motion';
@@ -84,6 +85,7 @@ function App() {
 
       <Footer />
       <ScrollToTop />
+      <MobileDock role={role} />
       <FoxGuide role={role} />
 
       <div ref={overlayRef} className={appStyles.roleOverlay} aria-hidden="true">

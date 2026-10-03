@@ -33,3 +33,7 @@
     font-size: 1.2rem;
   }
 }
+/* En celular la barra inferior (MobileDock) ocupa su lugar */
+@media (max-width: 899px) {
+  .scrollBtn { display: none; }
+}
