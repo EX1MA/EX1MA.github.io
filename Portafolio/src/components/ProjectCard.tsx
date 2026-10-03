@@ -14,38 +14,59 @@ const STATUS_MAP: Record<string, { label: string; cls: string }> = {
 
 export const ProjectCard = ({ project }: ProjectCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
-  const tilt    = useRef<{ rx: gsap.QuickToFunc; ry: gsap.QuickToFunc } | null>(null);
+  const tilt    = useRef<{ rx: gsap.QuickToFunc; ry: gsap.QuickToFunc; lift: gsap.core.Tween } | null>(null);
 
-  // Inclinación suave siguiendo el mouse (quickTo reutiliza un solo tween por eje)
+  // Inclinación 3D con el mouse: la tarjeta gira y sus capas (badges, título, stack, botones)
+  // se despegan a distintas alturas vía --lift. Solo con mouse y sin movimiento reducido.
   useGSAP(() => {
-    gsap.set(cardRef.current, { transformPerspective: 900 });
-    tilt.current = {
-      rx: gsap.quickTo(cardRef.current, 'rotationX', { duration: 0.5, ease: 'power3.out' }),
-      ry: gsap.quickTo(cardRef.current, 'rotationY', { duration: 0.5, ease: 'power3.out' }),
-    };
+    const card = cardRef.current!;
+    const mm = gsap.matchMedia();
+    mm.add('(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)', () => {
+      gsap.set(card, { transformPerspective: 1000 });
+      tilt.current = {
+        rx:   gsap.quickTo(card, 'rotationX', { duration: 0.7, ease: 'power3.out' }),
+        ry:   gsap.quickTo(card, 'rotationY', { duration: 0.7, ease: 'power3.out' }),
+        lift: gsap.to(card, { '--lift': 1, duration: 0.5, ease: 'power2.out', paused: true }),
+      };
+      return () => { tilt.current = null; };
+    });
   }, { scope: cardRef });
 
-  const onMove = (e: React.MouseEvent) => {
+  const onEnter = () => tilt.current?.lift.play();
+
+  const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!tilt.current) return;
     const box = e.currentTarget.getBoundingClientRect();
-    tilt.current?.rx(((e.clientY - box.top)  / box.height - 0.5) * 10);
-    tilt.current?.ry(((e.clientX - box.left) / box.width  - 0.5) * -10);
+    const nx = (e.clientX - box.left) / box.width;
+    const ny = (e.clientY - box.top)  / box.height;
+    tilt.current.rx((ny - 0.5) * 16);
+    tilt.current.ry((nx - 0.5) * -20);
+    cardRef.current?.style.setProperty('--gx', `${nx * 100}%`);
+    cardRef.current?.style.setProperty('--gy', `${ny * 100}%`);
   };
 
   const onLeave = () => {
-    tilt.current?.rx(0);
-    tilt.current?.ry(0);
+    if (!tilt.current) return;
+    tilt.current.rx(0);
+    tilt.current.ry(0);
+    tilt.current.lift.reverse();
   };
 
   const statusInfo = project.status ? STATUS_MAP[project.status] : null;
 
   return (
+    // El hover se detecta en este contenedor que no gira: si fuera la tarjeta inclinada,
+    // al rotar dejaría de estar bajo el cursor y parpadearía entre girar y aplanarse
+    <div
+      className={styles.hitArea}
+      onMouseEnter={onEnter}
+      onMouseMove={onMove}
+      onMouseLeave={onLeave}
+    >
     <div
       ref={cardRef}
       data-card
       className={`${styles.card} ${project.highlight ? styles.highlighted : ''}`}
-      onMouseMove={onMove}
-      onMouseLeave={onLeave}
-      style={{ transformStyle: 'preserve-3d' }}
     >
       {/* ── Image ── */}
       <div className={styles.imageWrap}>
@@ -54,15 +75,19 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
             style={project.pixelArt ? { imageRendering: 'pixelated' } : undefined} />
         </div>
 
-        {/* Hover overlay */}
-        <div className={styles.overlay}>
+        {/* Hover overlay (solo el fondo; el contenido flota en la capa de abajo) */}
+        <div className={styles.overlay} />
+      </div>
+
+      {/* ── Capa flotante sobre la imagen: fuera del overflow para poder salir en 3D ── */}
+      <div className={styles.imageLayer}>
+        <div className={styles.overlayContent}>
           <p className={styles.overlayLabel}>Stack Tecnológico</p>
           <div className={styles.overlayTags}>
             {project.technologies.map(t => <span key={t} className={styles.overlayTag}>{t}</span>)}
           </div>
         </div>
 
-        {/* Badges */}
         {project.year && <span className={styles.yearBadge}>{project.year}</span>}
         {statusInfo && (
           <span className={`${styles.statusBadge} ${statusInfo.cls}`}>{statusInfo.label}</span>
@@ -138,6 +163,9 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
         </a>
         )}
       </div>
+
+      <div className={styles.glare} aria-hidden="true" />
+    </div>
     </div>
   );
 };
