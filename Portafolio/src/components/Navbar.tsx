@@ -13,6 +13,10 @@ const NAV_LINKS = [
   { id: 'contact',  label: 'Contacto' },
 ];
 
+const formatCdmxTime = () =>
+  new Intl.DateTimeFormat('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Mexico_City' })
+    .format(new Date());
+
 interface NavbarProps {
   currentRole: Role;
   onSwitchRole: (role: Role) => void;
@@ -25,17 +29,43 @@ export const Navbar = ({ currentRole, onSwitchRole }: NavbarProps) => {
   );
   const [foxHidden, setFoxHiddenState] = useState(isFoxHidden);
   const [active, setActive] = useState('');
+  const [cdmxTime, setCdmxTime] = useState(formatCdmxTime);
   const navRef       = useRef<HTMLElement>(null);
   const listRef      = useRef<HTMLUListElement>(null);
   const indicatorRef = useRef<HTMLSpanElement>(null);
   const switcherRef  = useRef<HTMLDivElement>(null);
   const thumbRef     = useRef<HTMLSpanElement>(null);
+  const statusRef    = useRef<HTMLButtonElement>(null);
   const menuTl       = useRef<gsap.core.Timeline | null>(null);
   const isOpenRef    = useRef(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  // Hora local de CDMX para el indicador de disponibilidad
+  useEffect(() => {
+    const id = window.setInterval(() => setCdmxTime(formatCdmxTime()), 20_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  // "Disponible": el Hero ya lo dice, así que aparece junto al logo solo al salir del Hero
+  useGSAP(() => {
+    const pill = statusRef.current;
+    if (!pill) return;
+    const reduced = prefersReducedMotion();
+    gsap.set(pill, { autoAlpha: 0, x: -12 });
+    const toggle = (show: boolean) => gsap.to(pill, {
+      autoAlpha: show ? 1 : 0, x: show ? 0 : -12,
+      duration: reduced ? 0 : 0.5, ease: show ? 'back.out(1.6)' : 'power2.in', overwrite: true,
+    });
+    ScrollTrigger.create({
+      trigger: '#hero',
+      start: 'bottom 35%',
+      onEnter: () => toggle(true),
+      onLeaveBack: () => toggle(false),
+    });
+  });
 
   // Fondo al hacer scroll, y se esconde al bajar / reaparece al subir
   useGSAP(() => {
@@ -125,9 +155,21 @@ export const Navbar = ({ currentRole, onSwitchRole }: NavbarProps) => {
 
   return (
     <nav ref={navRef} className={navStyles.navbar}>
-      {/* Logo */}
-      <div className={navStyles.logo} onClick={() => scrollTo('hero')}>
-        {currentRole === 'developer' ? '<DevJoel />' : 'Joel·Design'}
+      {/* Logo + disponibilidad */}
+      <div className={navStyles.brand}>
+        <div className={navStyles.logo} onClick={() => scrollTo('hero')}>
+          {currentRole === 'developer' ? '<DevJoel />' : 'Joel·Design'}
+        </div>
+        <button
+          ref={statusRef}
+          className={navStyles.status}
+          onClick={() => scrollTo('contact')}
+          title="Disponible para trabajar — escríbeme"
+        >
+          <span className={navStyles.statusDot} aria-hidden="true" />
+          Disponible
+          <span className={navStyles.statusTime}>· {cdmxTime} CDMX</span>
+        </button>
       </div>
 
       {/* Desktop links */}

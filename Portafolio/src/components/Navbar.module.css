@@ -23,8 +23,78 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* ── Logo + disponibilidad ── */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 10px;
+  border-radius: 50px;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 28%, var(--border-color));
+  background: color-mix(in srgb, var(--primary-color) 8%, transparent);
+  color: var(--text-color);
+  font-family: var(--font);
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.25s ease, background 0.25s ease;
+}
+
+.status:hover {
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 14%, transparent);
+}
+
+.statusTime {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Punto con onda expansiva, como un "en línea" */
+.statusDot {
+  position: relative;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #2ecc71;
+  flex-shrink: 0;
+}
+
+.statusDot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #2ecc71;
+  animation: statusPing 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes statusPing {
+  75%, 100% { transform: scale(2.8); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statusDot::after { animation: none; }
+}
+
+@media (max-width: 1240px) {
+  .statusTime { display: none; }
+}
+
+@media (max-width: 1060px) and (min-width: 901px), (max-width: 480px) {
+  .status { display: none; }
+}
+
 /* ── Logo ── */
 .logo {
+  white-space: nowrap;
   font-size: 1.35rem;
   font-weight: 800;
   color: var(--secondary-color);
