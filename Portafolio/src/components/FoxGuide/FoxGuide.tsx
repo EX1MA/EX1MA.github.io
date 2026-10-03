@@ -25,7 +25,8 @@ const SCENES: { selector: string; scene: Scene; start?: string }[] = [
  * Zorro en pixel art que acompaña el recorrido: camina a su lugar en cada sección,
  * sigue el cursor en Hero y Contacto, y celebra cuando se envía el formulario.
  * Eventos globales: `fox:celebrate` (formulario enviado), `fox:react` (tarjeta girada),
- * `fox:sprint` (botón de subir) y `fox:count-start` / `fox:count-end` (contadores de Sobre mí).
+ * `fox:sprint` (botón de subir), `fox:count-start` / `fox:count-end` (contadores de Sobre mí)
+ * y `fox:dock` (barra inferior en celular; al montarse pide la posición con `fox:dock-request`).
  */
 export function FoxGuide({ role }: { role: Role }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -88,6 +89,10 @@ export function FoxGuide({ role }: { role: Role }) {
     const onSprint = () => engine.sprint();
     const onCountStart = () => engine.countStart();
     const onCountEnd = () => engine.countEnd();
+    const onDock = (e: Event) => {
+      const { inset, spot } = (e as CustomEvent<{ inset: number; spot: number | null }>).detail;
+      engine.setDock(inset, spot);
+    };
 
     // inactividad: tras 30 s sin moverse, el zorro se duerme
     let idleTimer = 0;
@@ -107,6 +112,9 @@ export function FoxGuide({ role }: { role: Role }) {
     window.addEventListener('fox:sprint', onSprint);
     window.addEventListener('fox:count-start', onCountStart);
     window.addEventListener('fox:count-end', onCountEnd);
+    window.addEventListener('fox:dock', onDock);
+    // la barra pudo avisar antes de que existiera el zorro: pide la posición actual
+    window.dispatchEvent(new Event('fox:dock-request'));
     document.addEventListener('input', onInput);
     document.addEventListener('pointerover', onOver);
     document.addEventListener('click', onClick);
@@ -124,6 +132,7 @@ export function FoxGuide({ role }: { role: Role }) {
       window.removeEventListener('fox:sprint', onSprint);
       window.removeEventListener('fox:count-start', onCountStart);
       window.removeEventListener('fox:count-end', onCountEnd);
+      window.removeEventListener('fox:dock', onDock);
       ACTIVITY.forEach(ev => window.removeEventListener(ev, onActivity));
       window.clearTimeout(idleTimer);
       document.removeEventListener('input', onInput);

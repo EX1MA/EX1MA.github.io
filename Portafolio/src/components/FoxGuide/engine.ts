@@ -92,6 +92,8 @@ export class FoxEngine {
   private height = FOOTPRINT;  // alto nativo del lienzo (toda la ventana)
   private floor = FOOTPRINT - 3; // borde inferior de la ventana
   private ground = FOOTPRINT - 3; // altura de las patas del zorro (sube cuando salta sobre las letras)
+  private dockInsetCss = 0;   // celular: alto (px CSS) que ocupa la barra inferior; el zorro se para encima
+  private dockSpotCss: number | null = null; // celular: x (px CSS) donde se para, lejos de la burbuja
   private t = 0;
   private particles: Particle[] = [];
 
@@ -174,7 +176,7 @@ export class FoxEngine {
     this.canvas.height = this.height;
     this.canvas.style.width = `${this.width * this.scale}px`;
     this.canvas.style.height = `${this.height * this.scale}px`;
-    this.floor = this.height - 3;
+    this.floor = this.height - 3 - (this.mobile ? Math.round(this.dockInsetCss / this.scale) : 0);
     if (!this.path) this.ground = this.floor;
     this.ctx.imageSmoothingEnabled = false;
     // entra corriendo desde el borde más cercano a su lugar (derecha en escritorio, izquierda en celular)
@@ -201,6 +203,15 @@ export class FoxEngine {
     this.targetX = this.fracToX(scene.x);
     if (this.reduced) { this.x = this.targetX; this.left = scene.face === 'left'; return; }
     if (!same && this.mode === 'pose') this.mode = 'move';
+  }
+
+  /** Barra líquida en celular: el zorro camina sobre ella y se aparta de la burbuja activa */
+  setDock(insetCss: number, spotCss: number | null) {
+    this.dockInsetCss = insetCss;
+    this.dockSpotCss = spotCss;
+    this.floor = this.height - 3 - (this.mobile ? Math.round(insetCss / this.scale) : 0);
+    if (!this.path) this.ground = this.floor;
+    if (this.scene) this.setTargetFrac(this.scene.x);
   }
 
   /** Mueve el destino sin cambiar de pose (Trayectoria: avanza con el scroll) */
@@ -741,7 +752,8 @@ export class FoxEngine {
 
   // ───────────────────────── dibujo ─────────────────────────
   private fracToX(frac: number) {
-    return this.mobile ? MOBILE_X : Math.round(frac * this.width);
+    if (!this.mobile) return Math.round(frac * this.width);
+    return this.dockSpotCss === null ? MOBILE_X : Math.round(this.dockSpotCss / this.scale);
   }
 
   private frameAt(anim: string, speed = 1) {
