@@ -22,8 +22,8 @@ export const portfolioData: Record<'developer' | 'designer', RoleContent> = {
     themeColor: '#d35400',
     hero: {
       title: "Joel Contreras",
-      subtitle: "Frontend Developer · Angular & React",
-      description: "Desarrollo interfaces web responsivas con Angular, React y TypeScript, y como diseñador gráfico también las diseño: llevo cada proyecto desde el concepto visual hasta el código.",
+      subtitle: "Frontend Developer · Angular & React · UI/UX Móvil",
+      description: "Desarrollo interfaces web responsivas con Angular, React y TypeScript, y diseño la experiencia UI/UX de apps móviles para Android e iOS: llevo cada proyecto desde el concepto visual hasta el código.",
       buttonText: "Ver Proyectos"
     },
     about: {
@@ -180,8 +180,8 @@ export const portfolioData: Record<'developer' | 'designer', RoleContent> = {
     themeColor: '#8e44ad',
     hero: {
       title: "Joel Contreras",
-      subtitle: "Diseñador Gráfico & UI/UX",
-      description: "Más de 10 años creando identidades corporativas, ilustración, empaque y contenido digital. Certificado en Google UX Design y con el código de mi lado para diseñar interfaces que sí se pueden construir.",
+      subtitle: "Diseñador Gráfico & UI/UX Web y Móvil",
+      description: "Más de 10 años creando identidades corporativas, ilustración, empaque y contenido digital. Certificado en Google UX Design, diseño interfaces web y apps móviles para Android e iOS que sí se pueden construir, porque también las programo.",
       buttonText: "Ver Portafolio"
     },
     about: {
