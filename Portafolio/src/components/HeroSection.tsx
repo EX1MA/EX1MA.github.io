@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { gsap, ScrollTrigger, SplitText, useGSAP } from '../animations/gsap';
 import heroStyles from './HeroSection.module.css';
 import { prefersReducedMotion } from '../utils/motion';
+import { HeroRibbons } from './HeroRibbons';
 
 interface HeroData {
   title: string;
@@ -101,7 +102,8 @@ export const HeroSection = ({ data, introDelay = 0.15 }: HeroSectionProps) => {
     // ── Al salir con el scroll: el contenido sube y se desvanece, las formas se separan ──
     gsap.timeline({ scrollTrigger: { trigger: root, start: 'top top', end: 'bottom top', scrub: 0.6 } })
       .to(q('[data-content]'), { y: -120, autoAlpha: 0, scale: 0.96, ease: 'none' }, 0)
-      .to(q('[data-shapes]'), { y: 160, ease: 'none' }, 0);
+      .to(q('[data-shapes]'), { y: 160, ease: 'none' }, 0)
+      .to(q('[data-ribbons]'), { autoAlpha: 0, yPercent: 12, ease: 'none' }, 0);
     });
     let alive = true; // si el componente se limpia antes de que cargue la fuente, no se ejecuta
     document.fonts.ready.then(() => { if (alive) intro(); });
@@ -140,6 +142,9 @@ export const HeroSection = ({ data, introDelay = 0.15 }: HeroSectionProps) => {
 
       {/* ── Animated mesh background ── */}
       <div className={heroStyles.mesh} aria-hidden="true" />
+
+      {/* ── Cintas de luz (WebGL) ── */}
+      <HeroRibbons />
 
       {/* ── Floating GSAP shapes ── */}
       <div data-shapes className={heroStyles.shapes} aria-hidden="true">

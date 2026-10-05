@@ -38,7 +38,7 @@ export interface Experience {
   company: string;
   place?: string;
   period: string;
-  description: string;
+  description?: string;
   current?: boolean;
 }
 

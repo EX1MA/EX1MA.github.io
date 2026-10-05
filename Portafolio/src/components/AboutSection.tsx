@@ -82,7 +82,7 @@ export const AboutSection = ({ data }: AboutSectionProps) => {
     <section id="about" ref={sectionRef} className="section-container">
       <div className={s.header}>
         <span className="section-label" data-reveal="label">Mi Historia</span>
-        <h2 className="section-title" data-reveal="title">Sobre Mí</h2>
+        <h2 className="section-title" data-reveal="title">Sobre <em>Mí</em></h2>
       </div>
 
       {/* Profile + Text */}
