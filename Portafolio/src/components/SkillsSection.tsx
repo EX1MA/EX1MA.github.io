@@ -156,7 +156,7 @@ export const SkillsSection = ({ skillsList, role }: SkillsSectionProps) => {
       <div className="section-container" style={{ paddingBottom: 0 }}>
         <div className={skillsStyles.header}>
           <span className="section-label" data-reveal="label">Stack & Herramientas</span>
-          <h2 className="section-title" data-reveal="title">Habilidades</h2>
+          <h2 className="section-title" data-reveal="title">Mis <em>Habilidades</em></h2>
           <p className="section-subtitle" data-reveal="lines">
             Tecnologías y herramientas que domino para construir productos de calidad.
           </p>

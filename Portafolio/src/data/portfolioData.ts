@@ -28,7 +28,7 @@ export const portfolioData: Record<'developer' | 'designer', RoleContent> = {
     },
     about: {
       text: [
-        "Soy diseñador gráfico titulado por la UNIMEX y desarrollador frontend. Desde 2022 diseño recursos visuales y desarrollo y mantengo el sitio web de Mayahual, y desarrollé el frontend del portal de facturación de Aeroméxico en México con Angular y TypeScript.",
+        "Soy diseñador gráfico titulado por la UNIMEX y desarrollador frontend. Desde diciembre de 2021 trabajo como Frontend Developer en Miatech International, donde desarrollé el frontend del portal de facturación de Aeroméxico en México con Angular y TypeScript. De 2022 a 2024 también diseñé, desarrollé y mantuve el sitio web de Mayahual.",
         "Mi perfil mixto me permite llevar un proyecto desde la conceptualización visual hasta la implementación en código. Me formé en frontend con Oracle Next Education (Alura Latam), tengo el certificado de Google UX Design y actualmente me estoy formando en arquitectura cloud con AWS."
       ],
       stats: [
@@ -41,7 +41,7 @@ export const portfolioData: Record<'developer' | 'designer', RoleContent> = {
       {
         id: 1,
         title: "Portal de Facturación México",
-        client: "Aeroméxico",
+        client: "Aeroméxico · Miatech",
         description: "Desarrollo completo del frontend para el portal de facturación de Aeroméxico en México: interfaces responsivas e integración con APIs para un flujo de facturación eficiente.",
         image: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=1200&auto=format&fit=crop",
         technologies: ["Angular", "TypeScript", "HTML5", "CSS3", "APIs REST"],
@@ -69,7 +69,7 @@ export const portfolioData: Record<'developer' | 'designer', RoleContent> = {
           "Mantenimiento continuo"
         ],
         year: 2022,
-        status: "Mantenimiento",
+        status: "Completado",
         category: "Sitio Institucional"
       },
       {
@@ -186,7 +186,7 @@ export const portfolioData: Record<'developer' | 'designer', RoleContent> = {
     },
     about: {
       text: [
-        "Soy diseñador gráfico con más de 10 años de experiencia en identidad corporativa, ilustración digital, empaque y contenido para redes sociales. He trabajado con marcas como Porto MX, Sonido Absoluto y Visión Comercial Deportiva (Wilson), además de mi propio proyecto, Kabuto-art.",
+        "Soy diseñador gráfico con más de 10 años de experiencia en identidad corporativa, ilustración digital, empaque y contenido para redes sociales. He trabajado para el Ayuntamiento de Naucalpan y con marcas como Porto MX, Sonido Absoluto y Visión Comercial Deportiva (Wilson), además de mi propio proyecto, Kabuto-art.",
         "Con el certificado de Google UX Design y experiencia como desarrollador frontend, combino el diseño visual con el pensamiento UX: diseño pensando en cómo se va a construir, desde la conceptualización hasta el archivo final para impresión o web."
       ],
       stats: [

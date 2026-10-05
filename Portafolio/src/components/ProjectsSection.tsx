@@ -85,7 +85,7 @@ export const ProjectsSection = ({ projectsList }: ProjectsSectionProps) => {
       {/* Header */}
       <div className={s.header}>
         <span className="section-label" data-reveal="label">Trabajo Selecto</span>
-        <h2 className="section-title" data-reveal="title">Mis Proyectos</h2>
+        <h2 className="section-title" data-reveal="title">Mis <em>Proyectos</em></h2>
         <div className={s.hintRow} data-reveal="up">
           <p className={s.scrollHint}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

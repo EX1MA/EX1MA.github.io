@@ -74,7 +74,7 @@ export const ContactSection = () => {
     <section id="contact" ref={sectionRef} className="section-container">
       <div className={s.header}>
         <span className="section-label" data-reveal="label">Contacto</span>
-        <h2 className="section-title" data-reveal="title">¿Tienes un proyecto?</h2>
+        <h2 className="section-title" data-reveal="title">¿Tienes un <em>proyecto</em>?</h2>
         <p className="section-subtitle" data-reveal="lines">
           Cuéntame tu idea. Respondo en menos de 24 horas.
         </p>

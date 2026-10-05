@@ -38,7 +38,7 @@ export const ExperienceSection = () => {
     <div className={s.header}>
       <div>
         <span className="section-label" data-reveal="label">Trayectoria</span>
-        <h2 className="section-title" data-reveal="title">Experiencia y Formación</h2>
+        <h2 className="section-title" data-reveal="title">Experiencia y <em>Formación</em></h2>
         <p className="section-subtitle" data-reveal="lines">
           Más de 10 años entre el diseño gráfico y el desarrollo frontend.
         </p>
@@ -57,7 +57,7 @@ export const ExperienceSection = () => {
         <li data-line role="presentation" className={s.lineFill} />
         {experience.map(job => (
           <li
-            key={job.company}
+            key={`${job.company}-${job.period}`}
             data-job
             className={`${s.item} ${job.current ? s.current : ''}`}
           >
@@ -69,7 +69,7 @@ export const ExperienceSection = () => {
             <p data-job-part className={s.company}>
               {job.company}{job.place && <span className={s.place}> — {job.place}</span>}
             </p>
-            <p data-job-part className={s.desc}>{job.description}</p>
+            {job.description && <p data-job-part className={s.desc}>{job.description}</p>}
           </li>
         ))}
       </ol>
