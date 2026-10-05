@@ -5,6 +5,7 @@ export const experience: Experience[] = [
     role: 'Frontend Developer',
     company: 'Miatech International SAC',
     period: 'Dic 2021 — Actual',
+    description: 'Desarrollo completo del frontend del portal de facturación de Aeroméxico en México con Angular y TypeScript: interfaces responsivas e integración con APIs para un flujo de facturación eficiente.',
     current: true,
   },
   {

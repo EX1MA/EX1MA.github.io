@@ -28,7 +28,7 @@ export const portfolioData: Record<'developer' | 'designer', RoleContent> = {
     },
     about: {
       text: [
-        "Soy diseñador gráfico titulado por la UNIMEX y desarrollador frontend. Desde diciembre de 2021 trabajo como Frontend Developer en Miatech International; desarrollé el frontend del portal de facturación de Aeroméxico en México con Angular y TypeScript, y de 2022 a 2024 diseñé, desarrollé y mantuve el sitio web de Mayahual.",
+        "Soy diseñador gráfico titulado por la UNIMEX y desarrollador frontend. Desde diciembre de 2021 trabajo como Frontend Developer en Miatech International, donde desarrollé el frontend del portal de facturación de Aeroméxico en México con Angular y TypeScript. De 2022 a 2024 también diseñé, desarrollé y mantuve el sitio web de Mayahual.",
         "Mi perfil mixto me permite llevar un proyecto desde la conceptualización visual hasta la implementación en código. Me formé en frontend con Oracle Next Education (Alura Latam), tengo el certificado de Google UX Design y actualmente me estoy formando en arquitectura cloud con AWS."
       ],
       stats: [
@@ -41,7 +41,7 @@ export const portfolioData: Record<'developer' | 'designer', RoleContent> = {
       {
         id: 1,
         title: "Portal de Facturación México",
-        client: "Aeroméxico",
+        client: "Aeroméxico · Miatech",
         description: "Desarrollo completo del frontend para el portal de facturación de Aeroméxico en México: interfaces responsivas e integración con APIs para un flujo de facturación eficiente.",
         image: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=1200&auto=format&fit=crop",
         technologies: ["Angular", "TypeScript", "HTML5", "CSS3", "APIs REST"],
